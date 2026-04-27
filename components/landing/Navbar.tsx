@@ -19,6 +19,8 @@ const navLinks = [
   { label: "Home",        href: "/feed",        icon: Home01Icon },
   { label: "Courses",     href: "/courses",     icon: BookOpen01Icon },
   { label: "Marketplace", href: "/marketplace", icon: ShoppingBag01Icon },
+  { label: "Pros",        href: "/pros",        icon: UserGroupIcon },
+  { label: "Pro Hub",     href: "/pro-hub",     icon: UserGroupIcon },
   { label: "Spaces",      href: "/spaces",      icon: Radio01Icon },
   { label: "Connections", href: "/connections", icon: UserAdd01Icon },
 ];

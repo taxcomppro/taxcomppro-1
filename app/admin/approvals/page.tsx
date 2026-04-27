@@ -1,24 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle, Clock, Search, Filter, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Search, Loader2, BadgeCheck, Users } from "lucide-react";
 
 type Status = "PENDING" | "APPROVED" | "REJECTED";
 
+/* ─── Listings ─────────────────────── */
 interface Listing {
   id: string; title: string; description: string;
-  category: string; price: number | null;
-  status: Status; viewCount: number; createdAt: string;
-  user: { id: string; name: string; email: string };
+  category: string; price: number | null; status: Status;
+  createdAt: string; user: { id: string; name: string; email: string };
 }
 
-const statusConfig: Record<Status, { label: string; className: string; icon: React.ElementType }> = {
-  PENDING:  { label: "Pending",  className: "bg-amber-100 text-amber-700",    icon: Clock },
-  APPROVED: { label: "Approved", className: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 },
-  REJECTED: { label: "Rejected", className: "bg-red-100 text-red-600",         icon: XCircle },
-};
+/* ─── Pro Applications ──────────────── */
+interface ProApp {
+  id: string; status: Status; specialty: string; credentials: string;
+  reason: string; note: string | null; createdAt: string;
+  user: { id: string; name: string; email: string; image: string | null; headline: string | null };
+}
 
-const catLabels: Record<string,string> = { SERVICE:"Service", PRODUCT:"Product", NETWORK:"Network", TRAINING:"Training" };
+const statusCfg: Record<Status, { label: string; cls: string; icon: React.ElementType }> = {
+  PENDING:  { label: "Pending",  cls: "bg-amber-100 text-amber-700",    icon: Clock },
+  APPROVED: { label: "Approved", cls: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 },
+  REJECTED: { label: "Rejected", cls: "bg-red-100 text-red-600",         icon: XCircle },
+};
+const catLabels: Record<string, string> = { SERVICE:"Service", PRODUCT:"Product", NETWORK:"Network", TRAINING:"Training" };
 
 function timeAgo(d: string) {
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
@@ -29,145 +35,230 @@ function timeAgo(d: string) {
 }
 
 export default function AdminApprovalsPage() {
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [filter, setFilter]     = useState<Status | "ALL">("ALL");
-  const [search, setSearch]     = useState("");
-  const [acting, setActing]     = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState<"listings" | "pros">("pros");
+
+  /* listings state */
+  const [listings,  setListings]  = useState<Listing[]>([]);
+  const [listLoad,  setListLoad]  = useState(true);
+  const [lFilter,   setLFilter]   = useState<Status | "ALL">("ALL");
+  const [lSearch,   setLSearch]   = useState("");
+  const [lActing,   setLActing]   = useState<Record<string, boolean>>({});
+
+  /* pro apps state */
+  const [proApps,   setProApps]   = useState<ProApp[]>([]);
+  const [proLoad,   setProLoad]   = useState(true);
+  const [pFilter,   setPFilter]   = useState<Status | "ALL">("PENDING");
+  const [pSearch,   setPSearch]   = useState("");
+  const [pActing,   setPActing]   = useState<Record<string, boolean>>({});
+  const [noteMap,   setNoteMap]   = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetch("/api/admin/listings")
-      .then(r => r.json())
+    fetch("/api/admin/listings").then(r => r.json())
       .then(d => setListings(Array.isArray(d) ? d : []))
-      .catch(() => setListings([]))
-      .finally(() => setLoading(false));
+      .catch(() => {}).finally(() => setListLoad(false));
+
+    fetch("/api/admin/professional-applications").then(r => r.json())
+      .then(d => setProApps(Array.isArray(d) ? d : []))
+      .catch(() => {}).finally(() => setProLoad(false));
   }, []);
 
-  const filtered = listings.filter(l => {
-    const matchFilter = filter === "ALL" || l.status === filter;
-    const matchSearch = l.title.toLowerCase().includes(search.toLowerCase()) || l.user.name.toLowerCase().includes(search.toLowerCase());
-    return matchFilter && matchSearch;
-  });
-
-  const updateStatus = async (id: string, status: Status) => {
-    setActing(p => ({ ...p, [id]: true }));
-    try {
-      const res = await fetch(`/api/admin/listings/${id}/status`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (res.ok) setListings(prev => prev.map(l => l.id === id ? { ...l, status } : l));
-    } catch { /* ignore */ }
-    finally { setActing(p => ({ ...p, [id]: false })); }
+  /* ── Listing actions ── */
+  const updateListing = async (id: string, status: Status) => {
+    setLActing(p => ({ ...p, [id]: true }));
+    const res = await fetch(`/api/admin/listings/${id}/status`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }),
+    });
+    if (res.ok) setListings(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+    setLActing(p => ({ ...p, [id]: false }));
   };
 
-  const counts = {
-    PENDING:  listings.filter(l => l.status === "PENDING").length,
-    APPROVED: listings.filter(l => l.status === "APPROVED").length,
-    REJECTED: listings.filter(l => l.status === "REJECTED").length,
+  /* ── Pro app actions ── */
+  const reviewApp = async (id: string, status: "APPROVED" | "REJECTED") => {
+    setPActing(p => ({ ...p, [id]: true }));
+    const res = await fetch(`/api/admin/professional-applications`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ applicationId: id, status, note: noteMap[id] ?? "" }),
+    });
+    if (res.ok) setProApps(prev => prev.map(a => a.id === id ? { ...a, status, note: noteMap[id] ?? null } : a));
+    setPActing(p => ({ ...p, [id]: false }));
   };
+
+  const filteredListings = listings.filter(l =>
+    (lFilter === "ALL" || l.status === lFilter) &&
+    (l.title.toLowerCase().includes(lSearch.toLowerCase()) || l.user.name.toLowerCase().includes(lSearch.toLowerCase()))
+  );
+
+  const filteredApps = proApps.filter(a =>
+    (pFilter === "ALL" || a.status === pFilter) &&
+    (a.user.name.toLowerCase().includes(pSearch.toLowerCase()) || a.specialty.toLowerCase().includes(pSearch.toLowerCase()))
+  );
+
+  const pCounts = { ALL: proApps.length, PENDING: proApps.filter(a => a.status==="PENDING").length, APPROVED: proApps.filter(a => a.status==="APPROVED").length, REJECTED: proApps.filter(a => a.status==="REJECTED").length };
+
+  const FilterChips = ({ options, active, setActive }: { options: { key: string; label: string; count: number; color: string }[]; active: string; setActive: (v: string) => void }) => (
+    <div className="flex gap-2 flex-wrap">
+      {options.map(o => (
+        <button key={o.key} onClick={() => setActive(o.key)}
+          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border-2 transition-all ${active===o.key ? "border-[#0a1628] bg-[#0a1628] text-white" : `border-transparent ${o.color} hover:border-slate-200`}`}>
+          {o.label}<span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${active===o.key?"bg-white/20":"bg-white/70"}`}>{o.count}</span>
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-[#0a1628]">Listing Approvals</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Review and approve marketplace listing submissions</p>
+        <h1 className="text-2xl font-black text-[#0a1628]">Approvals</h1>
+        <p className="text-slate-500 text-sm mt-0.5">Review listings and professional applications</p>
       </div>
 
-      {/* Filter chips */}
-      <div className="flex gap-3 flex-wrap">
-        {[
-          { key: "ALL",      label: "All",      count: listings.length,  color: "bg-slate-100 text-slate-600" },
-          { key: "PENDING",  label: "Pending",  count: counts.PENDING,   color: "bg-amber-100 text-amber-700" },
-          { key: "APPROVED", label: "Approved", count: counts.APPROVED,  color: "bg-emerald-100 text-emerald-700" },
-          { key: "REJECTED", label: "Rejected", count: counts.REJECTED,  color: "bg-red-100 text-red-600" },
-        ].map(s => (
-          <button key={s.key} onClick={() => setFilter(s.key as Status | "ALL")}
-            className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border-2 transition-all ${
-              filter === s.key ? "border-[#0a1628] bg-[#0a1628] text-white" : `border-transparent ${s.color} hover:border-slate-200`
-            }`}>
-            {s.label}
-            <span className={`text-xs font-black px-1.5 py-0.5 rounded-full ${filter === s.key ? "bg-white/20" : "bg-white/70"}`}>
-              {s.count}
-            </span>
-          </button>
-        ))}
+      {/* Tab switch */}
+      <div className="flex gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 w-fit">
+        <button onClick={() => setActiveTab("pros")} className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab==="pros" ? "bg-[#0a1628] text-white shadow" : "text-slate-500 hover:text-[#0a1628]"}`}>
+          <BadgeCheck className="w-4 h-4"/> Pro Applications
+          {pCounts.PENDING > 0 && <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{pCounts.PENDING}</span>}
+        </button>
+        <button onClick={() => setActiveTab("listings")} className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab==="listings" ? "bg-[#0a1628] text-white shadow" : "text-slate-500 hover:text-[#0a1628]"}`}>
+          <Users className="w-4 h-4"/> Listing Approvals
+        </button>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input type="text" placeholder="Search listings or sellers…" value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full font-[inherit] text-sm pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] focus:ring-2 focus:ring-[#0a1628]/10 transition-all" />
-      </div>
+      {/* ─── PRO APPLICATIONS TAB ─── */}
+      {activeTab === "pros" && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <FilterChips active={pFilter} setActive={v => setPFilter(v as Status | "ALL")} options={[
+              { key:"ALL",      label:"All",      count:pCounts.ALL,      color:"bg-slate-100 text-slate-600" },
+              { key:"PENDING",  label:"Pending",  count:pCounts.PENDING,  color:"bg-amber-100 text-amber-700" },
+              { key:"APPROVED", label:"Approved", count:pCounts.APPROVED, color:"bg-emerald-100 text-emerald-700" },
+              { key:"REJECTED", label:"Rejected", count:pCounts.REJECTED, color:"bg-red-100 text-red-600" },
+            ]}/>
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+              <input value={pSearch} onChange={e=>setPSearch(e.target.value)} placeholder="Search applicants…"
+                className="w-full text-sm pl-9 pr-4 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] transition-all font-[inherit]"/>
+            </div>
+          </div>
 
-      {loading ? (
-        <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 text-[#d4a017] animate-spin" /></div>
-      ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="text-left text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider">Listing</th>
-                <th className="text-left text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider hidden md:table-cell">Category</th>
-                <th className="text-left text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider hidden md:table-cell">Price</th>
-                <th className="text-left text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider">Status</th>
-                <th className="text-right text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map(l => {
-                const sc = statusConfig[l.status];
-                const SI = sc.icon;
+          {proLoad ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-[#0a1628]"/></div>
+          ) : filteredApps.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 bg-white rounded-2xl border border-slate-200">
+              <BadgeCheck className="w-8 h-8 mx-auto mb-3 opacity-40"/>
+              <p className="font-semibold">No applications found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredApps.map(app => {
+                const sc = statusCfg[app.status]; const SI = sc.icon;
                 return (
-                  <tr key={l.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="font-semibold text-[#0a1628] text-sm">{l.title}</div>
-                      <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
-                        <Clock className="w-3 h-3" />{l.user.name} · {timeAgo(l.createdAt)}
+                  <div key={app.id} className="bg-white rounded-2xl border border-slate-200 p-5">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {/* Applicant info */}
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="w-10 h-10 rounded-xl bg-[#0a1628] overflow-hidden flex items-center justify-center shrink-0 shadow">
+                          {app.user.image ? <img src={app.user.image} alt={app.user.name} referrerPolicy="no-referrer" className="w-full h-full object-cover"/> : <span className="text-white font-black">{app.user.name[0]}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                            <span className="font-bold text-[#0a1628] text-sm">{app.user.name}</span>
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${sc.cls}`}><SI className="w-3 h-3"/>{sc.label}</span>
+                          </div>
+                          <p className="text-xs text-slate-400">{app.user.email} · {timeAgo(app.createdAt)}</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <span className="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-full">🎯 {app.specialty}</span>
+                            <span className="text-xs bg-amber-50 text-amber-700 font-semibold px-2.5 py-1 rounded-full">🏅 {app.credentials}</span>
+                          </div>
+                          <div className="mt-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Reason</p>
+                            <p className="text-xs text-slate-600 leading-relaxed">{app.reason}</p>
+                          </div>
+                          {app.status === "PENDING" && (
+                            <div className="mt-3">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Admin Note (optional)</p>
+                              <input value={noteMap[app.id]??""} onChange={e=>setNoteMap(p=>({...p,[app.id]:e.target.value}))}
+                                placeholder="Note shown to applicant on rejection…"
+                                className="w-full text-xs font-[inherit] px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] transition-all"/>
+                            </div>
+                          )}
+                          {app.note && app.status !== "PENDING" && <p className="text-xs text-slate-500 mt-2 italic">Note: {app.note}</p>}
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <span className="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-1 rounded-full">{catLabels[l.category] ?? l.category}</span>
-                    </td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <span className="text-sm font-bold text-[#0a1628]">{l.price != null ? `$${l.price}` : "Free"}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${sc.className}`}>
-                        <SI className="w-3 h-3" />{sc.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2 justify-end">
-                        {acting[l.id] ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : (
-                          <>
-                            {l.status !== "APPROVED" && (
-                              <button onClick={() => updateStatus(l.id, "APPROVED")}
-                                className="flex items-center gap-1.5 text-xs font-bold bg-emerald-500 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600 transition-all">
-                                <CheckCircle2 className="w-3 h-3" /> Approve
-                              </button>
-                            )}
-                            {l.status !== "REJECTED" && (
-                              <button onClick={() => updateStatus(l.id, "REJECTED")}
-                                className="flex items-center gap-1.5 text-xs font-bold bg-red-50 text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-all">
-                                <XCircle className="w-3 h-3" /> Reject
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+
+                      {/* Actions */}
+                      {app.status === "PENDING" && (
+                        <div className="flex sm:flex-col gap-2 shrink-0 sm:w-32 justify-end">
+                          {pActing[app.id] ? <Loader2 className="w-5 h-5 animate-spin text-slate-400 mx-auto"/> : (<>
+                            <button onClick={() => reviewApp(app.id, "APPROVED")}
+                              className="flex items-center justify-center gap-1.5 text-xs font-bold bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition-all w-full">
+                              <CheckCircle2 className="w-3.5 h-3.5"/> Approve
+                            </button>
+                            <button onClick={() => reviewApp(app.id, "REJECTED")}
+                              className="flex items-center justify-center gap-1.5 text-xs font-bold bg-red-50 text-red-500 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-100 transition-all w-full">
+                              <XCircle className="w-3.5 h-3.5"/> Reject
+                            </button>
+                          </>)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div className="text-center py-16 text-slate-400">
-              <Filter className="w-8 h-8 mx-auto mb-3 opacity-40" />
-              <p className="font-semibold">{loading ? "Loading…" : "No listings found"}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── LISTINGS TAB ─── */}
+      {activeTab === "listings" && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <FilterChips active={lFilter} setActive={v => setLFilter(v as Status | "ALL")} options={[
+              { key:"ALL",      label:"All",      count:listings.length,                              color:"bg-slate-100 text-slate-600" },
+              { key:"PENDING",  label:"Pending",  count:listings.filter(l=>l.status==="PENDING").length,  color:"bg-amber-100 text-amber-700" },
+              { key:"APPROVED", label:"Approved", count:listings.filter(l=>l.status==="APPROVED").length, color:"bg-emerald-100 text-emerald-700" },
+              { key:"REJECTED", label:"Rejected", count:listings.filter(l=>l.status==="REJECTED").length, color:"bg-red-100 text-red-600" },
+            ]}/>
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+              <input value={lSearch} onChange={e=>setLSearch(e.target.value)} placeholder="Search listings…"
+                className="w-full text-sm pl-9 pr-4 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] transition-all font-[inherit]"/>
+            </div>
+          </div>
+
+          {listLoad ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-[#0a1628]"/></div>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="text-left text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider">Listing</th>
+                    <th className="text-left text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider hidden md:table-cell">Category</th>
+                    <th className="text-left text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider hidden md:table-cell">Price</th>
+                    <th className="text-left text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider">Status</th>
+                    <th className="text-right text-xs font-bold text-slate-500 px-5 py-3.5 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredListings.map(l => { const sc = statusCfg[l.status]; const SI = sc.icon; return (
+                    <tr key={l.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-5 py-4"><div className="font-semibold text-[#0a1628] text-sm">{l.title}</div><div className="text-xs text-slate-400 mt-0.5">{l.user.name} · {timeAgo(l.createdAt)}</div></td>
+                      <td className="px-5 py-4 hidden md:table-cell"><span className="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-1 rounded-full">{catLabels[l.category]??l.category}</span></td>
+                      <td className="px-5 py-4 hidden md:table-cell"><span className="text-sm font-bold text-[#0a1628]">{l.price!=null?`$${l.price}`:"Free"}</span></td>
+                      <td className="px-5 py-4"><span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${sc.cls}`}><SI className="w-3 h-3"/>{sc.label}</span></td>
+                      <td className="px-5 py-4"><div className="flex items-center gap-2 justify-end">
+                        {lActing[l.id] ? <Loader2 className="w-4 h-4 animate-spin text-slate-400"/> : (<>
+                          {l.status!=="APPROVED" && <button onClick={()=>updateListing(l.id,"APPROVED")} className="flex items-center gap-1.5 text-xs font-bold bg-emerald-500 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600 transition-all"><CheckCircle2 className="w-3 h-3"/>Approve</button>}
+                          {l.status!=="REJECTED" && <button onClick={()=>updateListing(l.id,"REJECTED")} className="flex items-center gap-1.5 text-xs font-bold bg-red-50 text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-all"><XCircle className="w-3 h-3"/>Reject</button>}
+                        </>)}
+                      </div></td>
+                    </tr>
+                  );})}
+                </tbody>
+              </table>
+              {filteredListings.length===0 && <div className="text-center py-16 text-slate-400"><p className="font-semibold">No listings found</p></div>}
             </div>
           )}
         </div>

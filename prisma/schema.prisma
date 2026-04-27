@@ -12,6 +12,12 @@ enum Role {
   ADMIN
 }
 
+enum AppStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum SubscriptionTier {
   FREE
   VIP
@@ -71,8 +77,20 @@ model User {
   role             Role             @default(MEMBER)
   tier             SubscriptionTier @default(FREE)
   image            String?
+  coverImage       String?
   bio              String?
   headline         String?
+  location         String?
+  yearsExperience  Int?
+  mission          String?
+  website          String?
+  linkedIn         String?
+  twitter          String?
+  facebook         String?
+  specialties      String[]
+  certifications   String[]
+  languages        String[]
+  mediaPhotos      String[]
   stripeCustomerId String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -98,6 +116,10 @@ model User {
   affiliateProfile    AffiliateProfile?
   referredBy          AffiliateReferral[]  @relation("ReferredUser")
   hostedSpaces        Space[]
+  proApplication      ProfessionalApplication?
+  proServices         ProService[]
+  reviewsReceived     ProReview[]  @relation("ReviewedPro")
+  reviewsGiven        ProReview[]  @relation("Reviewer")
 
   @@map("users")
 }
@@ -542,4 +564,50 @@ model Space {
   host User @relation(fields: [hostId], references: [id], onDelete: Cascade)
 
   @@map("spaces")
+}
+
+model ProfessionalApplication {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  status      AppStatus @default(PENDING)
+  reason      String
+  specialty   String
+  credentials String
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("professional_applications")
+}
+
+model ProService {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  price       String?
+  emoji       String   @default("⭐")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pro_services")
+}
+
+model ProReview {
+  id         String   @id @default(cuid())
+  proId      String
+  reviewerId String
+  rating     Int      @default(5)
+  content    String
+  createdAt  DateTime @default(now())
+
+  pro      User @relation("ReviewedPro", fields: [proId],      references: [id], onDelete: Cascade)
+  reviewer User @relation("Reviewer",    fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@unique([proId, reviewerId])
+  @@map("pro_reviews")
 }
