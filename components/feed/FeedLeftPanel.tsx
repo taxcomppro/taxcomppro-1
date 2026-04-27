@@ -1,0 +1,188 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setUser } from "@/store/slices/authSlice";
+import {
+  UserCircleIcon, Rocket01Icon, Notification01Icon,
+  ShoppingBag01Icon, Chart01Icon, BookOpen01Icon,
+  UserAdd01Icon, Home01Icon, Edit01Icon, Tick01Icon, Cancel01Icon,
+} from "hugeicons-react";
+
+const tierLabel: Record<string, string> = {
+  FREE: "Free Member", VIP: "VIP Member",
+  MARKETPLACE: "Marketplace Pro", MARKETPLACE_PLUS: "Marketplace Plus",
+};
+const tierColor: Record<string, string> = {
+  FREE: "bg-slate-100 text-slate-600",
+  VIP: "bg-amber-100 text-amber-700",
+  MARKETPLACE: "bg-indigo-100 text-indigo-700",
+  MARKETPLACE_PLUS: "bg-emerald-100 text-emerald-700",
+};
+
+export default function FeedLeftPanel() {
+  const dispatch  = useAppDispatch();
+  const user      = useAppSelector(s => s.auth.user);
+
+  const [editing,   setEditing]   = useState(false);
+  const [headline,  setHeadline]  = useState(user?.headline ?? "");
+  const [bio,       setBio]       = useState(user?.bio ?? "");
+  const [saving,    setSaving]    = useState(false);
+
+  if (!user) return null;
+
+  const canSell = user.tier === "MARKETPLACE" || user.tier === "MARKETPLACE_PLUS" || user.role === "PROFESSIONAL";
+  const tier    = user.tier ?? "FREE";
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ headline: headline.trim(), bio: bio.trim() }),
+      });
+      if (res.ok) {
+        dispatch(setUser({ ...user, headline: headline.trim(), bio: bio.trim() }));
+        setEditing(false);
+      }
+    } catch { /* ignore */ }
+    finally { setSaving(false); }
+  };
+
+  const handleCancel = () => {
+    setHeadline(user.headline ?? "");
+    setBio(user.bio ?? "");
+    setEditing(false);
+  };
+
+  return (
+    <aside className="w-full space-y-2.5">
+
+      {/* ── Profile card ── */}
+      <div className="bg-white rounded-2xl overflow-hidden">
+
+        {/* Cover banner */}
+        <div className="h-20 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50] relative">
+          <div className="absolute inset-0 opacity-10"
+            style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+
+          {/* Avatar — positioned to straddle the banner bottom edge */}
+          <div className="absolute -bottom-9 left-4">
+            <div className="w-[72px] h-[72px] rounded-full bg-[#0a1628] border-[3px] border-white overflow-hidden flex items-center justify-center shadow-md">
+              {user.image
+                ? <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                : <span className="text-white font-black text-2xl">{user.name?.[0]?.toUpperCase()}</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Info below banner */}
+        <div className="px-4 pt-12 pb-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="font-extrabold text-[#0a1628] text-base leading-tight truncate">{user.name}</div>
+              <div className="mt-1.5">
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${tierColor[tier]}`}>
+                  {tierLabel[tier]}
+                </span>
+              </div>
+            </div>
+            {/* Edit toggle */}
+            <button
+              onClick={() => setEditing(e => !e)}
+              className="shrink-0 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#0a1628] transition-all mt-0.5"
+              title="Edit headline & bio">
+              <Edit01Icon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Headline + Bio — view or edit */}
+          {editing ? (
+            <div className="mt-3 space-y-2">
+              <input
+                type="text"
+                value={headline}
+                onChange={e => setHeadline(e.target.value)}
+                placeholder="e.g. CPA | Tax Attorney | Enrolled Agent"
+                maxLength={100}
+                className="w-full text-xs font-[inherit] border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#0a1628] focus:ring-2 focus:ring-[#0a1628]/10 transition-all"
+              />
+              <textarea
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                placeholder="Tell the community about yourself…"
+                rows={3}
+                maxLength={300}
+                className="w-full text-xs font-[inherit] border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#0a1628] focus:ring-2 focus:ring-[#0a1628]/10 transition-all resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold bg-[#0a1628] text-white py-2 rounded-lg hover:bg-[#1a3a6b] transition-all disabled:opacity-50">
+                  <Tick01Icon className="w-3.5 h-3.5" />
+                  {saving ? "Saving…" : "Save"}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="flex items-center justify-center gap-1.5 px-3 text-xs font-bold text-slate-500 border border-slate-200 py-2 rounded-lg hover:bg-slate-50 transition-all">
+                  <Cancel01Icon className="w-3.5 h-3.5" />
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2.5 space-y-1">
+              {user.headline
+                ? <p className="text-xs font-semibold text-slate-600 leading-snug">{user.headline}</p>
+                : <p className="text-xs text-slate-400 italic">No headline — click ✎ to add one</p>}
+              {user.bio && <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{user.bio}</p>}
+            </div>
+          )}
+
+          {/* View profile link */}
+          <Link href="/profile"
+            className="mt-3 block text-center text-xs font-bold text-[#0a1628] border border-[#0a1628]/20 rounded-lg py-2 hover:bg-[#0a1628] hover:text-white transition-all">
+            View & Edit Full Profile
+          </Link>
+        </div>
+      </div>
+
+      {/* ── Navigation links ── */}
+      <div className="bg-white rounded-2xl p-3">
+        <div className="space-y-0.5">
+          {[
+            { icon: Home01Icon,           label: "Feed",          href: "/feed" },
+            { icon: UserCircleIcon,       label: "My Profile",    href: "/profile" },
+            { icon: Notification01Icon,   label: "Notifications", href: "/notifications" },
+            { icon: UserAdd01Icon,        label: "Connections",   href: "/connections" },
+            { icon: BookOpen01Icon,       label: "My Courses",    href: "/my-courses" },
+            ...(canSell ? [{ icon: ShoppingBag01Icon, label: "My Listings",  href: "/my-listings" }] : []),
+            ...(!canSell ? [{ icon: Rocket01Icon,     label: "Upgrade Plan", href: "/upgrade" }] : []),
+            ...(user.role === "ADMIN" ? [{ icon: Chart01Icon, label: "Admin Panel", href: "/admin" }] : []),
+          ].map(l => (
+            <Link key={l.href} href={l.href}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 text-sm font-medium hover:bg-slate-50 hover:text-[#0a1628] transition-all group">
+              <l.icon className="w-4 h-4 text-slate-400 group-hover:text-[#0a1628] transition-colors" />
+              {l.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Upgrade promo (free users only) ── */}
+      {!canSell && (
+        <div className="bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] rounded-2xl p-4 text-white">
+          <div className="text-xs font-black uppercase tracking-widest text-[#f0c040] mb-1">Go Pro</div>
+          <div className="text-sm font-bold leading-snug mb-2">Unlock marketplace selling & premium courses</div>
+          <Link href="/upgrade"
+            className="block text-center text-xs font-bold bg-[#f0c040] text-[#0a1628] rounded-lg py-2 hover:bg-[#d4a017] transition-all">
+            Upgrade Now
+          </Link>
+        </div>
+      )}
+    </aside>
+  );
+}

@@ -1,0 +1,339 @@
+"use client";
+
+import { Suspense, useEffect, useState, useRef, useCallback } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useAppSelector } from "@/store/hooks";
+import { Send, MessageSquare, Loader2, ArrowLeft, Check, CheckCheck, Search } from "lucide-react";
+import { Room, RoomEvent } from "livekit-client";
+
+interface MiniUser { id: string; name: string; image: string | null; headline?: string | null; }
+interface Message  { id: string; senderId: string; receiverId: string; content: string; isRead: boolean; createdAt: string; }
+interface Thread   { id: string; senderId: string; receiverId: string; content: string; createdAt: string; partner: MiniUser; }
+
+function Avatar({ user, size = "md" }: { user: { name: string; image?: string | null }; size?: "sm"|"md"|"lg" }) {
+  const sz = size === "lg" ? "w-12 h-12 text-lg" : size === "sm" ? "w-9 h-9 text-xs" : "w-10 h-10 text-sm";
+  return (
+    <div className={`${sz} rounded-full bg-[#0a1628] overflow-hidden flex items-center justify-center shrink-0`}>
+      {user.image
+        ? <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
+        : <span className="text-white font-bold">{user.name?.[0]?.toUpperCase()}</span>}
+    </div>
+  );
+}
+
+function timeStr(date: string) {
+  const d = new Date(date), now = new Date();
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function MessagesContent() {
+  const searchParams = useSearchParams();
+  const initUserId   = searchParams.get("user");
+  const me           = useAppSelector(s => s.auth.user);
+
+  const [threads, setThreads]     = useState<Thread[]>([]);
+  const [contacts, setContacts]   = useState<MiniUser[]>([]);
+  const [activeId, setActiveId]   = useState<string | null>(initUserId);
+  const [partner, setPartner]     = useState<MiniUser | null>(null);
+  const [messages, setMessages]   = useState<Message[]>([]);
+  const [draft, setDraft]         = useState("");
+  const [sending, setSending]     = useState(false);
+  const [threadsLoading, setThreadsLoading] = useState(true);
+  const [chatLoading, setChatLoading]       = useState(false);
+  const [search, setSearch]       = useState("");
+  const bottomRef   = useRef<HTMLDivElement>(null);
+  const textareaRef  = useRef<HTMLTextAreaElement>(null);
+  const lkRoom       = useRef<Room | null>(null);
+  const enc          = useRef(new TextEncoder());
+  const dec          = useRef(new TextDecoder());
+
+  const loadThreads = useCallback(async () => {
+    if (!me) return;
+    try {
+      const res = await fetch("/api/messages");
+      const data = await res.json();
+      setThreads(Array.isArray(data) ? data : []);
+    } catch { /**/ } finally { setThreadsLoading(false); }
+  }, [me]);
+
+  const loadChat = useCallback(async (userId: string) => {
+    setChatLoading(true);
+    try {
+      const res = await fetch(`/api/messages/${userId}`);
+      const data = await res.json();
+      setMessages(data.messages ?? []);
+      setPartner(data.partner ?? null);
+    } catch { /**/ } finally { setChatLoading(false); }
+  }, []);
+
+  useEffect(() => { loadThreads(); }, [loadThreads]);
+  useEffect(() => { if (activeId) loadChat(activeId); }, [activeId, loadChat]);
+
+  useEffect(() => {
+    if (!me) return;
+    fetch("/api/connections")
+      .then(r => r.ok ? r.json() : {})
+      .then((data: { connections?: { requester: MiniUser; receiver: MiniUser }[] }) => {
+        const conns = data.connections ?? [];
+        const people: MiniUser[] = conns.map((c: { requester: MiniUser; receiver: MiniUser }) =>
+          c.requester.id === me.id ? c.receiver : c.requester
+        );
+        setContacts(people);
+        if (initUserId) {
+          const found = people.find((p: MiniUser) => p.id === initUserId);
+          if (found) setPartner(found);
+        }
+      })
+      .catch(() => {});
+  }, [me, initUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Scroll to bottom only on new messages
+  useEffect(() => {
+    if (messages.length > 0) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  // ── LiveKit real-time channel ──────────────────────────────────────
+  useEffect(() => {
+    if (!activeId || !me?.id) return;
+    let room: Room | null = null;
+    let cancelled = false;
+
+    const connect = async () => {
+      try {
+        const res  = await fetch("/api/messages/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ partnerId: activeId }),
+        });
+        const { token, url } = await res.json() as { token: string; url: string };
+        if (cancelled) return;
+
+        room = new Room();
+        lkRoom.current = room;
+
+        room.on(RoomEvent.DataReceived, (data: Uint8Array) => {
+          try {
+            const msg = JSON.parse(dec.current.decode(data)) as Message;
+            setMessages(prev =>
+              prev.some(m => m.id === msg.id) ? prev : [...prev, msg]
+            );
+          } catch { /**/ }
+        });
+
+        await room.connect(url, token);
+      } catch { /**/ }
+    };
+
+    connect();
+    return () => {
+      cancelled = true;
+      lkRoom.current?.disconnect();
+      lkRoom.current = null;
+    };
+  }, [activeId, me?.id]);
+  // ─────────────────────────────────────────────────────────────────
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!draft.trim() || !activeId) return;
+    setSending(true);
+    const content = draft.trim();
+    setDraft("");
+    try {
+      const res = await fetch(`/api/messages/${activeId}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (res.ok) {
+        const newMsg = await res.json() as Message;
+        // Optimistic update for sender
+        setMessages(prev => [...prev, newMsg]);
+        // Broadcast to partner via LiveKit data channel
+        lkRoom.current?.localParticipant?.publishData(
+          enc.current.encode(JSON.stringify(newMsg)),
+          { reliable: true }
+        );
+        loadThreads();
+      }
+    } catch { /**/ } finally { setSending(false); }
+  };
+
+  if (!me) return (
+    <div className="fixed inset-0 top-[68px] bg-slate-100 flex items-center justify-center text-center px-4">
+      <div>
+        <MessageSquare className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+        <h1 className="text-xl font-black text-[#0a1628] mb-2">Sign in to view messages</h1>
+        <Link href="/login" className="inline-flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-6 py-3 rounded-full mt-3 hover:bg-[#1a3a6b] transition-all">Sign In</Link>
+      </div>
+    </div>
+  );
+
+  const filteredContacts = search
+    ? contacts.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+    : contacts;
+
+  return (
+    /* Fixed: sits below navbar (68px), above nothing — hides footer completely */
+    <div className="fixed inset-0 top-[68px] bg-slate-100 flex overflow-hidden">
+      <div className="max-w-[1200px] w-full mx-auto flex gap-0 h-full overflow-hidden">
+
+        {/* ── Left: Thread + Contacts list ── */}
+        <div className={`bg-white flex flex-col overflow-hidden border-r border-slate-200
+          ${activeId ? "hidden md:flex md:w-[320px] shrink-0" : "flex flex-1 md:flex-none md:w-[320px] md:shrink-0"}`}>
+
+          {/* Header */}
+          <div className="px-5 py-4 border-b border-slate-100 shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-black text-[#0a1628] text-lg">Messages</h2>
+              <Link href="/connections" className="text-xs font-semibold text-[#d4a017] hover:text-[#a07810] transition-colors">+ Connect</Link>
+            </div>
+            {/* Search */}
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+              <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <input type="text" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)}
+                className="flex-1 bg-transparent font-[inherit] text-xs text-slate-600 outline-none placeholder-slate-400" />
+            </div>
+          </div>
+
+          {/* Your Network row */}
+          {contacts.length > 0 && (
+            <div className="px-5 py-3 border-b border-slate-100 shrink-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Your Network</p>
+              <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
+                {filteredContacts.map(c => (
+                  <button key={c.id} onClick={() => setActiveId(c.id)} title={c.name}
+                    className={`flex flex-col items-center gap-1 shrink-0 transition-all p-1.5 rounded-xl ${activeId === c.id ? "bg-slate-100" : "hover:bg-slate-50"}`}>
+                    <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center border-2 transition-all ${activeId === c.id ? "border-[#0a1628]" : "border-transparent bg-[#0a1628]"}`}>
+                      {c.image
+                        ? <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
+                        : <span className="text-white font-bold text-xs">{c.name[0]?.toUpperCase()}</span>}
+                    </div>
+                    <span className="text-[10px] text-slate-500 max-w-[44px] truncate leading-tight">{c.name.split(" ")[0]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Thread list — scrollable */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {threadsLoading ? (
+              <div className="flex items-center justify-center h-24">
+                <Loader2 className="w-5 h-5 text-[#d4a017] animate-spin" />
+              </div>
+            ) : threads.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center gap-2">
+                <MessageSquare className="w-8 h-8 text-slate-200" />
+                <p className="text-xs font-semibold text-slate-400">No conversations yet</p>
+                <p className="text-xs text-slate-400">Click a contact above to start chatting</p>
+              </div>
+            ) : (
+              threads
+                .filter(t => !search || t.partner.name.toLowerCase().includes(search.toLowerCase()))
+                .map(t => (
+                <button key={t.id} onClick={() => setActiveId(t.partner.id)}
+                  className={`w-full flex items-center gap-3 px-5 py-3.5 text-left transition-all hover:bg-slate-50 border-b border-slate-50 last:border-0 ${activeId === t.partner.id ? "bg-blue-50/50 border-l-2 border-l-[#0a1628]" : ""}`}>
+                  <Avatar user={t.partner} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-[#0a1628] text-sm truncate">{t.partner.name}</div>
+                    <div className="text-xs text-slate-400 truncate mt-0.5">{t.content}</div>
+                  </div>
+                  <div className="text-[10px] text-slate-400 shrink-0 leading-none">{timeStr(t.createdAt)}</div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* ── Right: Chat window ── */}
+        {activeId ? (
+          <div className="flex-1 bg-white flex flex-col overflow-hidden min-w-0">
+            {/* Chat header */}
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 shrink-0">
+              <button onClick={() => setActiveId(null)} className="md:hidden p-1.5 hover:bg-slate-100 rounded-lg transition-all">
+                <ArrowLeft className="w-4 h-4 text-slate-500" />
+              </button>
+              {partner ? (
+                <>
+                  <Avatar user={partner} size="sm" />
+                  <div>
+                    <div className="font-bold text-[#0a1628] text-sm">{partner.name}</div>
+                    {partner.headline && <div className="text-xs text-slate-400">{partner.headline}</div>}
+                  </div>
+                </>
+              ) : (
+                <div className="w-32 h-4 bg-slate-100 rounded animate-pulse" />
+              )}
+            </div>
+
+            {/* Messages — scrollable */}
+            <div className="flex-1 overflow-y-auto min-h-0 px-5 py-4 space-y-2.5">
+              {chatLoading ? (
+                <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 text-[#d4a017] animate-spin" /></div>
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center gap-2">
+                  <MessageSquare className="w-10 h-10 text-slate-100" />
+                  <p className="text-slate-300 font-semibold">Say hello! 👋</p>
+                </div>
+              ) : (
+                messages.map(msg => {
+                  const isMine = msg.senderId === me.id;
+                  return (
+                    <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                        isMine ? "bg-[#0a1628] text-white rounded-br-none" : "bg-slate-100 text-slate-800 rounded-bl-none"}`}>
+                        {msg.content}
+                        <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
+                          <span className={`text-[10px] ${isMine ? "text-white/50" : "text-slate-400"}`}>{timeStr(msg.createdAt)}</span>
+                          {isMine && (msg.isRead
+                            ? <CheckCheck className="w-3 h-3 text-blue-300" />
+                            : <Check className="w-3 h-3 text-white/40" />)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Composer */}
+            <form onSubmit={sendMessage} className="px-4 py-3 border-t border-slate-100 flex gap-3 items-center shrink-0">
+              <input ref={textareaRef as unknown as React.RefObject<HTMLInputElement>}
+                type="text" value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); sendMessage(e as unknown as React.FormEvent); }}}
+                placeholder="Type a message…"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-5 py-3 text-sm font-[inherit] outline-none focus:border-slate-300 transition-all" />
+              <button type="submit" disabled={sending || !draft.trim()}
+                className="w-11 h-11 bg-[#0a1628] hover:bg-[#1a3a6b] text-white rounded-full flex items-center justify-center transition-all disabled:opacity-40 shrink-0 shadow-sm">
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="flex-1 bg-white hidden md:flex flex-col items-center justify-center text-center gap-3">
+            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center">
+              <MessageSquare className="w-8 h-8 text-slate-300" />
+            </div>
+            <p className="font-black text-slate-300 text-lg">Select a conversation</p>
+            <p className="text-slate-400 text-sm max-w-[220px]">
+              Pick from your network above or{" "}
+              <Link href="/connections" className="text-[#0a1628] font-semibold hover:underline">connect with someone</Link>
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-100" />}>
+      <MessagesContent />
+    </Suspense>
+  );
+}

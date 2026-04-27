@@ -1,0 +1,35 @@
+import Link from "next/link";
+import Image from "next/image";
+
+export default function PublicFooter() {
+  return (
+    <footer className="bg-[#0a1628] pt-14 pb-8">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+          <div>
+            <Link href="/" className="inline-flex items-center mb-4 bg-white rounded-xl px-3 py-2">
+              <Image src="/logo.png" alt="TaxComPro" width={130} height={38} className="object-contain" priority />
+            </Link>
+            <p className="text-white/45 text-sm leading-relaxed">The professional community for tax experts and taxpayers across America.</p>
+          </div>
+          {[
+            { title: "Platform",  links: [["Marketplace","/marketplace"],["Pro Hub","/pro-hub"],["Pricing","/#pricing"],["Dashboard","/dashboard"]] },
+            { title: "Company",   links: [["About Us","/about"],["Contact","/contact"],["Affiliate Program","/affiliate"],["Security","/security"]] },
+            { title: "Legal",     links: [["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Community Guidelines","/community-guidelines"],["Cookie Policy","/cookie-policy"]] },
+          ].map((col) => (
+            <div key={col.title}>
+              <h4 className="text-white font-bold text-sm mb-4">{col.title}</h4>
+              {col.links.map(([label, href]) => (
+                <Link key={label} href={href} className="block text-white/45 text-sm mb-2.5 hover:text-[#f0c040] transition-colors">{label}</Link>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-3 text-white/30 text-xs">
+          <p>© {new Date().getFullYear()} TaxComPro. All rights reserved.</p>
+          <p>Built for tax professionals</p>
+        </div>
+      </div>
+    </footer>
+  );
+}

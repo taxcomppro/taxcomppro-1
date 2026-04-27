@@ -1,0 +1,545 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  MEMBER
+  PROFESSIONAL
+  ADMIN
+}
+
+enum SubscriptionTier {
+  FREE
+  VIP
+  MARKETPLACE
+  MARKETPLACE_PLUS
+}
+
+enum ListingCategory {
+  SERVICE
+  PRODUCT
+  NETWORK
+  TRAINING
+}
+
+enum ListingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LessonContentType {
+  VIDEO
+  TEXT
+  QUIZ
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+model User {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  emailVerified    Boolean          @default(false)
+  name             String
+  role             Role             @default(MEMBER)
+  tier             SubscriptionTier @default(FREE)
+  image            String?
+  bio              String?
+  headline         String?
+  stripeCustomerId String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  sessions            Session[]
+  accounts            Account[]
+  listings            MarketplaceListing[]
+  createdCommunities  Community[]
+  communityMembers    CommunityMember[]
+  posts               Post[]
+  comments            Comment[]
+  postLikes           PostLike[]
+  subscription        Subscription?
+  notifications       Notification[]
+  sentConnections     Connection[]         @relation("Requester")
+  receivedConnections Connection[]         @relation("Receiver")
+  sentMessages        Message[]            @relation("SentMessages")
+  receivedMessages    Message[]            @relation("ReceivedMessages")
+  instructorCourses   Course[]             @relation("InstructorCourses")
+  enrollments         Enrollment[]
+  quizAttempts        QuizAttempt[]
+  courseRatings       CourseRating[]
+  affiliateProfile    AffiliateProfile?
+  referredBy          AffiliateReferral[]  @relation("ReferredUser")
+  hostedSpaces        Space[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verifications")
+}
+
+model MarketplaceListing {
+  id          String          @id @default(cuid())
+  slug        String?         @unique
+  title       String
+  description String
+  category    ListingCategory
+  price       Float?
+  images      String[]
+  tags        String[]
+  status      ListingStatus   @default(PENDING)
+  isFeatured  Boolean         @default(false)
+  userId      String
+  viewCount   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("marketplace_listings")
+}
+
+model Community {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  coverImage  String?
+  icon        String?
+  isPublic    Boolean  @default(true)
+  creatorId   String
+  memberCount Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  members CommunityMember[]
+  posts   Post[]
+
+  @@map("communities")
+}
+
+model CommunityMember {
+  id          String   @id @default(cuid())
+  userId      String
+  communityId String
+  role        String   @default("MEMBER")
+  joinedAt    DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, communityId])
+  @@map("community_members")
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  content     String
+  authorId    String
+  communityId String?
+  images      String[]
+  likeCount   Int      @default(0)
+  commentCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  community Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+  likes     PostLike[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  authorId  String
+  postId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("post_likes")
+}
+
+model Subscription {
+  id                   String           @id @default(cuid())
+  userId               String           @unique
+  plan                 SubscriptionTier
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  status               String           @default("active")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Connection {
+  id          String           @id @default(cuid())
+  requesterId String
+  receiverId  String
+  status      ConnectionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  requester User @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  receiver  User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, receiverId])
+  @@map("connections")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentMessages",   fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Course {
+  id            String       @id @default(cuid())
+  slug          String       @unique
+  title         String
+  description   String
+  thumbnail     String?
+  level         CourseLevel  @default(BEGINNER)
+  status        CourseStatus @default(DRAFT)
+  price         Float        @default(0)
+  isFree        Boolean      @default(true)
+  isSequential  Boolean      @default(true)
+  category      String
+  tags          String[]
+  learningOutcomes String[]
+  requirements     String[]
+  totalDuration Int          @default(0)
+  instructorId  String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  instructor    User          @relation("InstructorCourses", fields: [instructorId], references: [id])
+  sections    CourseSection[]
+  enrollments Enrollment[]
+  ratings       CourseRating[]
+
+  @@map("courses")
+}
+
+model CourseSection {
+  id        String   @id @default(cuid())
+  title     String
+  order     Int
+  courseId  String
+  createdAt DateTime @default(now())
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@map("course_sections")
+}
+
+model Lesson {
+  id          String            @id @default(cuid())
+  title       String
+  description String?
+  contentType LessonContentType @default(VIDEO)
+  videoUrl    String?
+  textContent String?
+  duration    Int               @default(0)
+  order       Int
+  isFree      Boolean           @default(false)
+  sectionId   String
+  createdAt   DateTime          @default(now())
+
+  section  CourseSection    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+  quiz     Quiz?
+
+  @@map("lessons")
+}
+
+model Quiz {
+  id        String   @id @default(cuid())
+  lessonId  String   @unique
+  title     String
+  passMark  Int      @default(70)
+  createdAt DateTime @default(now())
+
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  quizId        String
+  question      String
+  options       String[]
+  correctAnswer Int
+  explanation   String?
+  order         Int
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  quizId      String
+  score       Int
+  passed      Boolean
+  answers     Int[]
+  completedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_attempts")
+}
+
+model Enrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  courseId    String
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id           String   @id @default(cuid())
+  enrollmentId String
+  lessonId     String
+  completedAt  DateTime @default(now())
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+  @@map("lesson_progress")
+}
+
+model CourseRating {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  rating    Int
+  review    String?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("course_ratings")
+}
+
+model AffiliateProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  code           String   @unique
+  isActive       Boolean  @default(true)
+  totalEarned    Float    @default(0)
+  totalPaid      Float    @default(0)
+  pendingBalance Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals AffiliateReferral[]
+  payouts   AffiliatePayout[]
+
+  @@map("affiliate_profiles")
+}
+
+model AffiliateReferral {
+  id             String           @id @default(cuid())
+  affiliateId    String
+  referredUserId String
+  tier           SubscriptionTier
+  commission     Float
+  createdAt      DateTime         @default(now())
+
+  affiliate    AffiliateProfile @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  referredUser User             @relation("ReferredUser", fields: [referredUserId], references: [id])
+
+  @@map("affiliate_referrals")
+}
+
+model AffiliatePayout {
+  id          String       @id @default(cuid())
+  affiliateId String
+  amount      Float
+  method      String       @default("paypal")
+  details     String
+  status      PayoutStatus @default(PENDING)
+  note        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  affiliate AffiliateProfile @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@map("affiliate_payouts")
+}
+
+model AffiliateSettings {
+  id                    String   @id @default(cuid())
+  commissionVip         Float    @default(10)
+  commissionMarketplace Float    @default(15)
+  commissionPlus        Float    @default(20)
+  minPayoutAmount       Float    @default(50)
+  cookieDays            Int      @default(30)
+  programEnabled        Boolean  @default(true)
+  updatedAt             DateTime @updatedAt
+
+  @@map("affiliate_settings")
+}
+
+model AtlasSettings {
+  id              String   @id @default(cuid())
+  widgetEnabled   Boolean  @default(true)
+  defaultProvider String   @default("openai")
+  allowedTiers    String[] @default(["FREE","VIP","MARKETPLACE","MARKETPLACE_PLUS"])
+  maxTokens       Int      @default(1024)
+  systemPromptExtra String @default("")
+  updatedAt       DateTime @updatedAt
+
+  @@map("atlas_settings")
+}
+
+model Space {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  hostId      String
+  roomName    String    @unique
+  isLive      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  endedAt     DateTime?
+
+  host User @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  @@map("spaces")
+}
