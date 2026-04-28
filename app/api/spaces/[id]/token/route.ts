@@ -22,6 +22,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const token = new AccessToken(apiKey, apiSecret, {
     identity: session.user.id,
     name:     session.user.name ?? session.user.id,
+    metadata: JSON.stringify({ image: session.user.image ?? null }),
   });
 
   token.addGrant({

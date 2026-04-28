@@ -16,6 +16,8 @@ import {
 interface Listing {
   id: string; slug: string | null; title: string; description: string;
   category: string; price: number | null; tags: string[];
+  images: string[];
+  metadata: Record<string, string> | null;
   isFeatured: boolean; viewCount: number; createdAt: string;
   user: { id: string; name: string; image: string | null; headline: string | null; role: string; tier: string };
 }
@@ -138,6 +140,13 @@ export default function ListingDetailPage() {
           {/* ── LEFT: single combined card ── */}
           <div className="bg-white rounded-2xl overflow-hidden">
 
+            {/* Banner image */}
+            {listing.images?.[0] && (
+              <div className="h-52 w-full overflow-hidden border-b border-slate-100">
+                <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
+              </div>
+            )}
+
             {/* Header section */}
             <div className="p-6 pb-5">
               <div className="flex items-start gap-3 mb-4">
@@ -173,6 +182,28 @@ export default function ListingDetailPage() {
               <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">About This Listing</h2>
               <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">{listing.description}</p>
             </div>
+
+            {/* Category metadata */}
+            {listing.metadata && Object.keys(listing.metadata).some(k => listing.metadata![k]) && (
+              <>
+                <div className="h-px bg-slate-100 mx-6" />
+                <div className="p-6 pt-5">
+                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Details</h2>
+                  <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3">
+                    {Object.entries(listing.metadata)
+                      .filter(([, v]) => v)
+                      .map(([k, v]) => (
+                        <div key={k}>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            {k.replace(/([A-Z])/g, " $1").trim()}
+                          </p>
+                          <p className="text-sm font-semibold text-[#0a1628] mt-0.5">{v}</p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Tags */}
             {listing.tags.length > 0 && (

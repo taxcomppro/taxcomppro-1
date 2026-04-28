@@ -37,7 +37,20 @@ export default function ProProfilePage() {
       fetch(`/api/pros/${id}`).then(r => r.ok ? r.json() as Promise<Pro> : Promise.reject()),
       fetch(`/api/pros/${id}/services`).then(r => r.json() as Promise<Service[]>),
       fetch(`/api/pros/${id}/reviews`).then(r => r.json() as Promise<Review[]>),
-    ]).then(([p, s, rv]) => { setPro(p); setServices(Array.isArray(s)?s:[]); setReviews(Array.isArray(rv)?rv:[]); })
+    ]).then(([p, s, rv]) => {
+      // Ensure all array fields have safe defaults
+      const safePro: Pro = {
+        ...p,
+        specialties:     p.specialties     ?? [],
+        certifications:  p.certifications  ?? [],
+        languages:       p.languages       ?? [],
+        mediaPhotos:     p.mediaPhotos      ?? [],
+        instructorCourses: p.instructorCourses ?? [],
+      };
+      setPro(safePro);
+      setServices(Array.isArray(s) ? s : []);
+      setReviews(Array.isArray(rv) ? rv : []);
+    })
       .catch(() => router.push("/pros"))
       .finally(() => setLoading(false));
   }, [id, router]);

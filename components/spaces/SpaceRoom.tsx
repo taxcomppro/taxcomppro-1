@@ -8,11 +8,12 @@ import {
   useLocalParticipant,
   useTracks,
   AudioTrack,
+  VideoTrack,
   useRoomContext,
 } from "@livekit/components-react";
 import { RoomEvent, Track } from "livekit-client";
 import { Mic01Icon, MicOff02Icon, PhoneOff01Icon, Radio01Icon, Message01Icon } from "hugeicons-react";
-import { Loader2, X, Hand, Send, Users } from "lucide-react";
+import { Loader2, X, Hand, Send, Users, Monitor, MonitorOff } from "lucide-react";
 
 interface SpaceHost { id: string; name: string; image: string | null; headline: string | null; }
 interface Space { id: string; name: string; description: string | null; roomName: string; hostId: string; host: SpaceHost; }
@@ -59,20 +60,40 @@ function Avatar({ name, image, isHost, isSpeaking, micOn, handUp, size = "lg" }:
   );
 }
 
+function getParticipantImage(metadata?: string): string | null {
+  if (!metadata) return null;
+  try { return (JSON.parse(metadata) as { image?: string | null }).image ?? null; }
+  catch { return null; }
+}
+
 function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "userId">) {
   const router = useRouter();
   const room = useRoomContext();
   const participants = useParticipants();
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
-  const tracks = useTracks([Track.Source.Microphone], { onlySubscribed: false });
 
-  const [chat, setChat]         = useState<ChatMsg[]>([]);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chat, setChat]           = useState<ChatMsg[]>([]);
+  const [chatOpen, setChatOpen]   = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const [raised, setRaised]     = useState<Set<string>>(new Set());
-  const [myHandUp, setMyHandUp] = useState(false);
-  const [unread, setUnread]     = useState(0);
+  const [raised, setRaised]       = useState<Set<string>>(new Set());
+  const [myHandUp, setMyHandUp]   = useState(false);
+  const [unread, setUnread]       = useState(0);
+  const [screenError, setScreenError] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const audioTracks  = useTracks([Track.Source.Microphone], { onlySubscribed: false });
+  const screenTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
+  const { isScreenShareEnabled } = useLocalParticipant();
+
+  const toggleScreenShare = useCallback(async () => {
+    setScreenError("");
+    try {
+      await localParticipant.setScreenShareEnabled(!isScreenShareEnabled);
+    } catch (e: unknown) {
+      const err = e as Error;
+      if (!err?.message?.includes("denied")) setScreenError("Screen share failed.");
+    }
+  }, [isScreenShareEnabled, localParticipant]);
 
   useEffect(() => {
     const handler = (data: Uint8Array) => {
@@ -140,7 +161,23 @@ function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "use
         </div>
 
         {/* Audio (invisible) */}
-        {tracks.map(t => t.participant.isLocal ? null : <AudioTrack key={t.publication.trackSid} trackRef={t} />)}
+        {audioTracks.map(t => t.participant.isLocal ? null : <AudioTrack key={t.publication.trackSid} trackRef={t} />)}
+
+        {/* ── Screen share panel ── */}
+        {screenTracks.length > 0 && (
+          <div className="mx-4 mt-4 rounded-2xl overflow-hidden border border-violet-500/30 bg-black shrink-0">
+            <div className="flex items-center gap-2 px-3 py-2 bg-violet-900/40 border-b border-violet-500/20">
+              <Monitor className="w-3.5 h-3.5 text-violet-400" />
+              <span className="text-violet-300 text-xs font-semibold">
+                {screenTracks[0].participant.name ?? screenTracks[0].participant.identity} is sharing their screen
+              </span>
+              {screenTracks.length > 1 && (
+                <span className="ml-auto text-violet-400/60 text-[10px]">+{screenTracks.length - 1} more</span>
+              )}
+            </div>
+            <VideoTrack trackRef={screenTracks[0]} className="w-full max-h-[45vh] object-contain bg-black" />
+          </div>
+        )}
 
         {/* Participants */}
         <div className="flex-1 overflow-y-auto px-6 py-8 space-y-10">
@@ -153,6 +190,7 @@ function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "use
               <div className="flex flex-wrap gap-8">
                 {speakers.map(p => (
                   <Avatar key={p.identity} name={p.name ?? p.identity}
+                    image={getParticipantImage(p.metadata)}
                     isHost={p.identity === space.hostId} isSpeaking={p.isSpeaking}
                     micOn={p.isMicrophoneEnabled} handUp={raised.has(p.identity)} />
                 ))}
@@ -174,6 +212,7 @@ function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "use
               <div className="flex flex-wrap gap-5">
                 {listeners.map(p => (
                   <Avatar key={p.identity} name={p.name ?? p.identity}
+                    image={getParticipantImage(p.metadata)}
                     size="sm" isHost={false} isSpeaking={p.isSpeaking}
                     micOn={p.isMicrophoneEnabled} handUp={raised.has(p.identity)} />
                 ))}
@@ -205,6 +244,16 @@ function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "use
               <Hand className="w-4 h-4" /> {myHandUp ? "Lower Hand" : "Raise Hand"}
             </CtrlBtn>
 
+            <CtrlBtn
+              active={isScreenShareEnabled}
+              activeClass="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30"
+              inactiveClass="bg-white/8 hover:bg-white/12 text-white/60"
+              onClick={toggleScreenShare}>
+              {isScreenShareEnabled
+                ? <><MonitorOff className="w-4 h-4" /> Stop Share</>
+                : <><Monitor className="w-4 h-4" /> Share Screen</>}
+            </CtrlBtn>
+
             <button onClick={() => setChatOpen(v => !v)}
               className={`relative flex items-center gap-2 px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all border ${chatOpen ? "bg-white/12 border-white/20 text-white" : "bg-white/8 hover:bg-white/12 border-transparent text-white/60"}`}>
               <Message01Icon className="w-4 h-4" /> Chat
@@ -223,6 +272,9 @@ function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "use
               </button>
             )}
           </div>
+          {screenError && (
+            <p className="text-center text-red-400/80 text-xs mt-2">{screenError}</p>
+          )}
         </div>
       </div>
 

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUser } from "@/store/slices/authSlice";
 import Link from "next/link";
-import { Loader2, BadgeCheck, Clock, X } from "lucide-react";
+import { Loader2, BadgeCheck, Clock, X, CreditCard } from "lucide-react";
 import { UserCircleIcon, Mail01Icon, Briefcase01Icon, NoteIcon, Tick02Icon, BookOpen01Icon, UserGroupIcon, Rocket01Icon, ShoppingBag01Icon, Add01Icon } from "hugeicons-react";
 
 type AppStatus = "PENDING"|"APPROVED"|"REJECTED";
@@ -22,6 +22,15 @@ export default function MemberProfile() {
   const [showForm, setShowForm] = useState(false);
   const [appSpec, setAppSpec] = useState(""); const [appCreds, setAppCreds] = useState(""); const [appReason, setAppReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const openPortal = async () => {
+    setPortalLoading(true);
+    const res = await fetch("/api/stripe/portal", { method: "POST" });
+    const data = await res.json() as { url?: string; error?: string };
+    if (data.url) window.location.href = data.url;
+    else { alert(data.error ?? "Could not open portal"); setPortalLoading(false); }
+  };
 
   useEffect(() => {
     fetch("/api/user/me").then(r => r.json()).then((u: Record<string,unknown>) => {
@@ -68,7 +77,16 @@ export default function MemberProfile() {
               {headline ? <p className="text-sm text-slate-500">{headline}</p> : <p className="text-sm text-slate-400 italic">No headline yet</p>}
               <p className="text-xs text-slate-400 mt-1">{user?.email}</p>
             </div>
-            <Link href="/upgrade" className="text-xs font-bold bg-[#0a1628] text-white px-4 py-2 rounded-full hover:bg-[#1a3a6b] transition-all shrink-0">Upgrade</Link>
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+              {tier !== "FREE" && (
+                <button onClick={openPortal} disabled={portalLoading}
+                  className="flex items-center gap-1.5 text-xs font-bold border-2 border-[#0a1628] text-[#0a1628] px-4 py-2 rounded-full hover:bg-[#0a1628] hover:text-white transition-all">
+                  {portalLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5" />}
+                  Manage Plan
+                </button>
+              )}
+              <Link href="/upgrade" className="text-xs font-bold bg-[#0a1628] text-white px-4 py-2 rounded-full hover:bg-[#1a3a6b] transition-all shrink-0">Upgrade</Link>
+            </div>
           </div>
         </div>
 

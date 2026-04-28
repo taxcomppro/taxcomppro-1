@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
       price:       body.price ?? null,
       tags:        body.tags ?? [],
       images:      body.images ?? [],
+      metadata:    body.metadata ?? undefined,
       userId:      session.user.id,
       status:      isAdmin ? "APPROVED" : "PENDING",
       isFeatured:  isAdmin,

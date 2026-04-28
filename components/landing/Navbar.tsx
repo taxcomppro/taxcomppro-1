@@ -13,27 +13,51 @@ import {
   UserGroupIcon, Message01Icon, UserAdd01Icon, BookOpen01Icon,
   Store01Icon, Rocket01Icon, Radio01Icon,
 } from "hugeicons-react";
-import { Gift, Shield } from "lucide-react";
+import { Gift, Shield, GraduationCap, ChevronDown } from "lucide-react";
 
-const navLinks = [
-  { label: "Home",        href: "/feed",        icon: Home01Icon },
-  { label: "Courses",     href: "/courses",     icon: BookOpen01Icon },
-  { label: "Marketplace", href: "/marketplace", icon: ShoppingBag01Icon },
-  { label: "Pros",        href: "/pros",        icon: UserGroupIcon },
-  { label: "Pro Hub",     href: "/pro-hub",     icon: UserGroupIcon },
-  { label: "Spaces",      href: "/spaces",      icon: Radio01Icon },
-  { label: "Connections", href: "/connections", icon: UserAdd01Icon },
+type NavItem =
+  | { type: "link";     label: string; href: string;  icon: React.ElementType }
+  | { type: "dropdown"; label: string; icon: React.ElementType; items: { label: string; href: string; icon: React.ElementType; desc: string }[] };
+
+const navItems: NavItem[] = [
+  { type: "link",     label: "Home",      href: "/feed",    icon: Home01Icon },
+  { type: "link",     label: "Courses",   href: "/courses", icon: BookOpen01Icon },
+  { type: "link",     label: "Toolkits",  href: "/toolkits",icon: GraduationCap },
+  {
+    type: "dropdown", label: "Marketplace", icon: ShoppingBag01Icon,
+    items: [
+      { label: "Marketplace", href: "/marketplace", icon: ShoppingBag01Icon, desc: "" },
+      { label: "Spaces",      href: "/spaces",      icon: Radio01Icon,        desc: "" },
+    ],
+  },
+  {
+    type: "dropdown", label: "Pros", icon: UserGroupIcon,
+    items: [
+      { label: "Pro Marketplace", href: "/pros",    icon: UserGroupIcon,  desc: "" },
+      { label: "Pro Hub",         href: "/pro-hub", icon: Rocket01Icon,   desc: "" },
+    ],
+  },
 ];
+
+// Flat list for mobile menu — links + all dropdown sub-items
+const navLinks: { label: string; href: string; icon: React.ElementType }[] = navItems.flatMap(item =>
+  item.type === "link"
+    ? [{ label: item.label, href: item.href, icon: item.icon }]
+    : item.items.map(sub => ({ label: sub.label, href: sub.href, icon: sub.icon }))
+);
+
 
 export default function Navbar() {
   const router = useRouter();
-  const [mobileOpen, setMobileOpen]       = useState(false);
-  const [dropdownOpen, setDropdownOpen]   = useState(false);
-  const [searchOpen, setSearchOpen]       = useState(false);
-  const [searchQuery, setSearchQuery]     = useState("");
-  const [unreadCount, setUnreadCount]     = useState(0);
+  const [mobileOpen, setMobileOpen]     = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [openMenu, setOpenMenu]         = useState<string | null>(null);
+  const [searchOpen, setSearchOpen]     = useState(false);
+  const [searchQuery, setSearchQuery]   = useState("");
+  const [unreadCount, setUnreadCount]   = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const dropdownRef    = useRef<HTMLDivElement>(null);
+  const navMenuRef     = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { data: session, isPending } = useSession();
@@ -86,10 +110,11 @@ export default function Navbar() {
       .catch(() => {});
   }, [session]);
 
-  // Close dropdown on outside click
+  // Close user dropdown on outside click
   useEffect(() => {
     function handle(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
+      if (navMenuRef.current && !navMenuRef.current.contains(e.target as Node)) setOpenMenu(null);
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
@@ -143,14 +168,49 @@ export default function Navbar() {
         ) : (
           <>
             {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-1 flex-1">
-              {navLinks.map(l => (
-                <Link key={l.label} href={l.href}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-[#0a1628] hover:bg-slate-50 px-3.5 py-2 rounded-lg transition-all">
-                  <l.icon className="w-3.5 h-3.5" />
-                  {l.label}
-                </Link>
-              ))}
+            <nav className="hidden md:flex items-center gap-1 flex-1" ref={navMenuRef}>
+              {navItems.map(item => {
+                if (item.type === "link") {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.label} href={item.href}
+                      className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-[#0a1628] hover:bg-slate-50 px-3.5 py-2 rounded-lg transition-all">
+                      <Icon className="w-3.5 h-3.5" />{item.label}
+                    </Link>
+                  );
+                }
+                // dropdown
+                const Icon = item.icon;
+                const isOpen = openMenu === item.label;
+                return (
+                  <div key={item.label} className="relative">
+                    <button onClick={() => setOpenMenu(isOpen ? null : item.label)}
+                      className={`flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-lg transition-all ${
+                        isOpen ? "bg-slate-100 text-[#0a1628]" : "text-slate-500 hover:text-[#0a1628] hover:bg-slate-50"
+                      }`}>
+                      <Icon className="w-3.5 h-3.5" />{item.label}
+                      <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    {isOpen && (
+                      <div className="absolute top-full left-0 mt-1.5 w-52 bg-white rounded-xl border border-slate-200 shadow-lg py-1.5 z-50">
+                        {item.items.map(sub => {
+                          const SubIcon = sub.icon;
+                          return (
+                            <Link key={sub.label} href={sub.href}
+                              onClick={() => setOpenMenu(null)}
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors">
+                              <div className="w-7 h-7 rounded-lg bg-[#0a1628]/8 flex items-center justify-center shrink-0">
+                                <SubIcon className="w-3.5 h-3.5 text-[#0a1628]" />
+                              </div>
+                              <p className="text-sm font-bold text-[#0a1628]">{sub.label}</p>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </nav>
 
             {/* Desktop right */}
