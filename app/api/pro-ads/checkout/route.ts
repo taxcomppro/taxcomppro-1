@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-const AD_PRICES: Record<string, number> = {
+const AD_PRICES: Record<string, number> = { 
   CENTER_COLUMN: 199,
   LEFT_COLUMN:   299,
 };
