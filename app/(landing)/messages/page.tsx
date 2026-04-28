@@ -4,11 +4,11 @@ import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
-import { Send, MessageSquare, Loader2, ArrowLeft, Check, CheckCheck, Search } from "lucide-react";
+import { Send, MessageSquare, Loader2, ArrowLeft, Check, CheckCheck, Search, Megaphone } from "lucide-react";
 import { Room, RoomEvent } from "livekit-client";
 
 interface MiniUser { id: string; name: string; image: string | null; headline?: string | null; }
-interface Message  { id: string; senderId: string; receiverId: string; content: string; isRead: boolean; createdAt: string; }
+interface Message  { id: string; senderId: string; receiverId: string; content: string; isRead: boolean; isSponsored?: boolean; createdAt: string; }
 interface Thread   { id: string; senderId: string; receiverId: string; content: string; createdAt: string; partner: MiniUser; }
 
 function Avatar({ user, size = "md" }: { user: { name: string; image?: string | null }; size?: "sm"|"md"|"lg" }) {
@@ -280,6 +280,31 @@ function MessagesContent() {
               ) : (
                 messages.map(msg => {
                   const isMine = msg.senderId === me.id;
+
+                  // Sponsored message — distinct amber card layout
+                  if (msg.isSponsored) {
+                    // content is stored as "**subject**\n\nbody"
+                    const raw = msg.content;
+                    const subjectMatch = raw.match(/^\*\*(.+?)\*\*/);
+                    const subject = subjectMatch ? subjectMatch[1] : "";
+                    const body = raw.replace(/^\*\*.+?\*\*\n\n?/, "").trim();
+                    return (
+                      <div key={msg.id} className="flex justify-start">
+                        <div className="max-w-[75%] rounded-2xl rounded-bl-none border-l-4 border-amber-400 bg-amber-50 overflow-hidden">
+                          <div className="flex items-center gap-2 bg-amber-400/20 px-4 py-1.5">
+                            <Megaphone className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span className="text-[10px] font-black text-amber-700 uppercase tracking-wider">Sponsored</span>
+                          </div>
+                          <div className="px-4 py-3">
+                            {subject && <p className="font-bold text-[#0a1628] text-sm mb-1">{subject}</p>}
+                            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{body || raw}</p>
+                            <span className="text-[10px] text-amber-500 mt-2 block">{timeStr(msg.createdAt)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                       <div className={`max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${

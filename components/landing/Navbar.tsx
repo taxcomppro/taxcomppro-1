@@ -13,7 +13,7 @@ import {
   UserGroupIcon, Message01Icon, UserAdd01Icon, BookOpen01Icon,
   Store01Icon, Rocket01Icon, Radio01Icon,
 } from "hugeicons-react";
-import { Gift, Shield, GraduationCap, ChevronDown } from "lucide-react";
+import { Gift, Shield, GraduationCap, ChevronDown, Megaphone } from "lucide-react";
 
 type NavItem =
   | { type: "link";     label: string; href: string;  icon: React.ElementType }
@@ -33,8 +33,9 @@ const navItems: NavItem[] = [
   {
     type: "dropdown", label: "Pros", icon: UserGroupIcon,
     items: [
-      { label: "Pro Marketplace", href: "/pros",    icon: UserGroupIcon,  desc: "" },
-      { label: "Pro Hub",         href: "/pro-hub", icon: Rocket01Icon,   desc: "" },
+      { label: "Pro Marketplace", href: "/pros",          icon: UserGroupIcon, desc: "" },
+      { label: "Pro Hub",         href: "/pro-hub",       icon: Rocket01Icon,  desc: "" },
+      { label: "Pro Marketing",   href: "/pro-marketing", icon: Megaphone,     desc: "" },
     ],
   },
 ];

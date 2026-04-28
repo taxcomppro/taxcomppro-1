@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Fragment, useEffect, useState, useCallback, useRef } from "react";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
 import FeedLeftPanel from "@/components/feed/FeedLeftPanel";
 import FeedRightPanel from "@/components/feed/FeedRightPanel";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, MonitorPlay, ExternalLink } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
 
 export default function FeedPage() {
@@ -15,6 +15,7 @@ export default function FeedPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor]   = useState<string | null>(null);
   const [hasNew, setHasNew]           = useState(false);
+  const [centerAds, setCenterAds]     = useState<{id:string;title:string;description:string|null;imageUrl:string;linkUrl:string;user:{name:string}}[]>([]);
   const loaderRef    = useRef<HTMLDivElement>(null);
   const pollingRef   = useRef<NodeJS.Timeout | null>(null);
   const latestIdRef  = useRef<string | null>(null);
@@ -40,6 +41,10 @@ export default function FeedPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    // Fetch center column ads
+    fetch("/api/pro-ads/active?placement=CENTER_COLUMN")
+      .then(r => r.json()).then(d => setCenterAds(Array.isArray(d) ? d : []))
+      .catch(() => {});
   }, [fetchFeed]);
 
   // Poll every 30s for new posts
@@ -121,9 +126,45 @@ export default function FeedPage() {
               </div>
             ) : (
               <>
-                {posts.map(post => (
-                  <PostCard key={post.id} post={post} onUpdate={handlePostUpdate} />
-                ))}
+                {posts.map((post, idx) => {
+                  const adIdx = Math.floor(idx / 5);
+                  const showAd = idx > 0 && idx % 5 === 0 && centerAds.length > 0;
+                  const ad = showAd ? centerAds[adIdx % centerAds.length] : null;
+                  return (
+                    <Fragment key={post.id}>
+                      {ad && (
+                        <div className="relative">
+                          {/* Sponsored badge — above the card */}
+                          <div className="flex items-center gap-1.5 mb-1.5 ml-1">
+                            <MonitorPlay className="w-3 h-3 text-amber-500" />
+                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Sponsored</span>
+                            <span className="text-[10px] text-slate-400 ml-auto mr-1">by {ad.user.name}</span>
+                          </div>
+                          {/* Banner card */}
+                          <a href={ad.linkUrl} target="_blank" rel="noopener noreferrer"
+                            className="block relative rounded-2xl overflow-hidden group shadow-sm hover:shadow-lg transition-all">
+                            {/* Image */}
+                            <div className="w-full aspect-[16/9] overflow-hidden">
+                              <img src={ad.imageUrl} alt={ad.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                onError={e => { (e.target as HTMLImageElement).style.display="none"; }} />
+                            </div>
+                            {/* Hover overlay — title + desc slide up from bottom */}
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-4 py-3
+                              translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
+                              <p className="font-bold text-white text-sm leading-tight">{ad.title}</p>
+                              {ad.description && <p className="text-white/70 text-xs mt-0.5 line-clamp-1">{ad.description}</p>}
+                              <span className="inline-flex items-center gap-1 text-amber-400 text-[10px] font-bold mt-1">
+                                <ExternalLink className="w-3 h-3" /> Visit →
+                              </span>
+                            </div>
+                          </a>
+                        </div>
+                      )}
+                      <PostCard post={post} onUpdate={handlePostUpdate} />
+                    </Fragment>
+                  );
+                })}
                 <div ref={loaderRef} className="h-8 flex items-center justify-center">
                   {loadingMore && <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />}
                 </div>

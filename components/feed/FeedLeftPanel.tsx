@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUser } from "@/store/slices/authSlice";
@@ -9,6 +9,7 @@ import {
   ShoppingBag01Icon, Chart01Icon, BookOpen01Icon,
   UserAdd01Icon, Home01Icon, Edit01Icon, Tick01Icon, Cancel01Icon,
 } from "hugeicons-react";
+import { MonitorPlay, ExternalLink } from "lucide-react";
 
 const tierLabel: Record<string, string> = {
   FREE: "Free Member", VIP: "VIP Member",
@@ -29,6 +30,13 @@ export default function FeedLeftPanel() {
   const [headline,  setHeadline]  = useState(user?.headline ?? "");
   const [bio,       setBio]       = useState(user?.bio ?? "");
   const [saving,    setSaving]    = useState(false);
+  const [leftAds,   setLeftAds]   = useState<{id:string;title:string;description:string|null;imageUrl:string;linkUrl:string;user:{name:string}}[]>([]);
+
+  useEffect(() => {
+    fetch("/api/pro-ads/active?placement=LEFT_COLUMN")
+      .then(r => r.json()).then(d => setLeftAds(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, []);
 
   if (!user) return null;
 
@@ -183,6 +191,33 @@ export default function FeedLeftPanel() {
           </Link>
         </div>
       )}
+      {/* ── Left-column ads ── */}
+      {leftAds.map(ad => (
+        <div key={ad.id} className="relative">
+          {/* Sponsored badge above */}
+          <div className="flex items-center gap-1.5 mb-1.5 ml-1">
+            <MonitorPlay className="w-3 h-3 text-amber-500" />
+            <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Sponsored</span>
+          </div>
+          <a href={ad.linkUrl} target="_blank" rel="noopener noreferrer"
+            className="block relative rounded-2xl overflow-hidden group shadow-sm hover:shadow-lg transition-all">
+            <div className="w-full aspect-[16/9] overflow-hidden">
+              <img src={ad.imageUrl} alt={ad.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                onError={e => { (e.target as HTMLImageElement).style.display="none"; }} />
+            </div>
+            {/* Hover overlay */}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-3 py-2
+              translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
+              <p className="font-bold text-white text-xs leading-tight truncate">{ad.title}</p>
+              {ad.description && <p className="text-white/70 text-[10px] mt-0.5 line-clamp-1">{ad.description}</p>}
+              <span className="inline-flex items-center gap-1 text-amber-400 text-[9px] font-bold mt-1">
+                <ExternalLink className="w-2.5 h-2.5" /> Visit →
+              </span>
+            </div>
+          </a>
+        </div>
+      ))}
     </aside>
   );
 }

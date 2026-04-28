@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle, Clock, Search, Loader2, BadgeCheck, Users } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Search, Loader2, BadgeCheck, Users, Megaphone, MonitorPlay, Star } from "lucide-react";
 
 type Status = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -35,7 +35,28 @@ function timeAgo(d: string) {
 }
 
 export default function AdminApprovalsPage() {
-  const [activeTab, setActiveTab] = useState<"listings" | "pros">("pros");
+  const [activeTab, setActiveTab] = useState<"listings" | "pros" | "blasts" | "proads" | "featured">("pros");
+
+  /* pro ads state */
+  interface ProAdItem { id: string; title: string; description: string | null; imageUrl: string; linkUrl: string; placement: string; durationMonths: number; priceUsd: number; status: string; createdAt: string; rejectionReason: string | null; user: { id: string; name: string; email: string; image: string | null }; }
+  const [proAds,        setProAds]       = useState<ProAdItem[]>([]);
+  const [proAdsLoad,    setProAdsLoad]   = useState(true);
+  const [adActing,      setAdActing]     = useState<Record<string, boolean>>({});
+  const [adRejectReasons, setAdRejectReasons] = useState<Record<string, string>>({});
+
+  /* featured listings state */
+  interface FeaturedItem { id: string; durationMonths: number; priceUsd: number; status: string; createdAt: string; rejectionReason: string | null; user: { id: string; name: string; email: string; image: string | null }; listing: { id: string; title: string; category: string; images: string[]; description: string }; }
+  const [featItems,     setFeatItems]    = useState<FeaturedItem[]>([]);
+  const [featLoad,      setFeatLoad]     = useState(true);
+  const [featActing,    setFeatActing]   = useState<Record<string, boolean>>({});
+  const [featReasons,   setFeatReasons]  = useState<Record<string, string>>({});
+
+  /* blasts state */
+  interface Blast { id: string; subject: string; content: string; recipientCount: number; priceUsd: number; status: string; createdAt: string; rejectionReason: string | null; sender: { id: string; name: string; email: string; image: string | null }; }
+  const [blasts,      setBlasts]    = useState<Blast[]>([]);
+  const [blastLoad,   setBlastLoad] = useState(true);
+  const [blastActing, setBlastActing] = useState<Record<string, boolean>>({});
+  const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
 
   /* listings state */
   const [listings,  setListings]  = useState<Listing[]>([]);
@@ -56,11 +77,67 @@ export default function AdminApprovalsPage() {
     fetch("/api/admin/listings").then(r => r.json())
       .then(d => setListings(Array.isArray(d) ? d : []))
       .catch(() => {}).finally(() => setListLoad(false));
-
     fetch("/api/admin/professional-applications").then(r => r.json())
       .then(d => setProApps(Array.isArray(d) ? d : []))
       .catch(() => {}).finally(() => setProLoad(false));
+    fetch("/api/admin/message-blasts?status=PENDING_APPROVAL").then(r => r.json())
+      .then(d => setBlasts(Array.isArray(d) ? d : []))
+      .catch(() => {}).finally(() => setBlastLoad(false));
+    fetch("/api/admin/pro-ads?status=PENDING_APPROVAL").then(r => r.json())
+      .then(d => setProAds(Array.isArray(d) ? d : []))
+      .catch(() => {}).finally(() => setProAdsLoad(false));
+    fetch("/api/admin/featured-listings?status=PENDING_APPROVAL").then(r => r.json())
+      .then(d => setFeatItems(Array.isArray(d) ? d : []))
+      .catch(() => {}).finally(() => setFeatLoad(false));
   }, []);
+
+  const approveProAd = async (id: string) => {
+    setAdActing(p => ({ ...p, [id]: true }));
+    const res = await fetch(`/api/admin/pro-ads/${id}/approve`, { method: "POST" });
+    if (res.ok) setProAds(p => p.filter(a => a.id !== id));
+    setAdActing(p => ({ ...p, [id]: false }));
+  };
+  const rejectProAd = async (id: string) => {
+    setAdActing(p => ({ ...p, [id]: true }));
+    await fetch(`/api/admin/pro-ads/${id}/reject`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: adRejectReasons[id] ?? "" }),
+    });
+    setProAds(p => p.filter(a => a.id !== id));
+    setAdActing(p => ({ ...p, [id]: false }));
+  };
+
+  const approveFeatured = async (id: string) => {
+    setFeatActing(p => ({ ...p, [id]: true }));
+    const res = await fetch(`/api/admin/featured-listings/${id}/approve`, { method: "POST" });
+    if (res.ok) setFeatItems(p => p.filter(f => f.id !== id));
+    setFeatActing(p => ({ ...p, [id]: false }));
+  };
+  const rejectFeatured = async (id: string) => {
+    setFeatActing(p => ({ ...p, [id]: true }));
+    await fetch(`/api/admin/featured-listings/${id}/reject`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: featReasons[id] ?? "" }),
+    });
+    setFeatItems(p => p.filter(f => f.id !== id));
+    setFeatActing(p => ({ ...p, [id]: false }));
+  };
+
+  const approveBlast = async (id: string) => {
+    setBlastActing(p => ({ ...p, [id]: true }));
+    const res = await fetch(`/api/admin/message-blasts/${id}/approve`, { method: "POST" });
+    if (res.ok) setBlasts(p => p.filter(b => b.id !== id));
+    setBlastActing(p => ({ ...p, [id]: false }));
+  };
+  const rejectBlast = async (id: string) => {
+    setBlastActing(p => ({ ...p, [id]: true }));
+    const res = await fetch(`/api/admin/message-blasts/${id}/reject`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: rejectReasons[id] ?? "" }),
+    });
+    if (res.ok) setBlasts(p => p.filter(b => b.id !== id));
+    setBlastActing(p => ({ ...p, [id]: false }));
+  };
 
   /* ── Listing actions ── */
   const updateListing = async (id: string, status: Status) => {
@@ -114,13 +191,25 @@ export default function AdminApprovalsPage() {
       </div>
 
       {/* Tab switch */}
-      <div className="flex gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 w-fit">
+      <div className="flex gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 w-fit flex-wrap">
         <button onClick={() => setActiveTab("pros")} className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab==="pros" ? "bg-[#0a1628] text-white shadow" : "text-slate-500 hover:text-[#0a1628]"}`}>
           <BadgeCheck className="w-4 h-4"/> Pro Applications
           {pCounts.PENDING > 0 && <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{pCounts.PENDING}</span>}
         </button>
         <button onClick={() => setActiveTab("listings")} className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab==="listings" ? "bg-[#0a1628] text-white shadow" : "text-slate-500 hover:text-[#0a1628]"}`}>
           <Users className="w-4 h-4"/> Listing Approvals
+        </button>
+        <button onClick={() => setActiveTab("blasts")} className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab==="blasts" ? "bg-[#0a1628] text-white shadow" : "text-slate-500 hover:text-[#0a1628]"}`}>
+          <Megaphone className="w-4 h-4"/> Message Blasts
+          {blasts.length > 0 && <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{blasts.length}</span>}
+        </button>
+        <button onClick={() => setActiveTab("proads")} className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab==="proads" ? "bg-[#0a1628] text-white shadow" : "text-slate-500 hover:text-[#0a1628]"}`}>
+          <MonitorPlay className="w-4 h-4"/> Pro Ads
+          {proAds.length > 0 && <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{proAds.length}</span>}
+        </button>
+        <button onClick={() => setActiveTab("featured")} className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab==="featured" ? "bg-[#0a1628] text-white shadow" : "text-slate-500 hover:text-[#0a1628]"}`}>
+          <Star className="w-4 h-4"/> Featured Listings
+          {featItems.length > 0 && <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{featItems.length}</span>}
         </button>
       </div>
 
@@ -261,6 +350,179 @@ export default function AdminApprovalsPage() {
               {filteredListings.length===0 && <div className="text-center py-16 text-slate-400"><p className="font-semibold">No listings found</p></div>}
             </div>
           )}
+        </div>
+      )}
+      {/* ─── BLASTS TAB ─── */}
+      {activeTab === "blasts" && (
+        <div className="space-y-4">
+          {blastLoad ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-[#0a1628]"/></div>
+          ) : blasts.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 bg-white rounded-2xl border border-slate-200">
+              <Megaphone className="w-8 h-8 mx-auto mb-3 opacity-30"/>
+              <p className="font-semibold">No pending blasts</p>
+              <p className="text-sm mt-1">All message blast submissions are up to date.</p>
+            </div>
+          ) : blasts.map(b => (
+            <div key={b.id} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-[#0a1628] overflow-hidden flex items-center justify-center shrink-0">
+                  {b.sender.image
+                    ? <img src={b.sender.image} alt={b.sender.name} referrerPolicy="no-referrer" className="w-full h-full object-cover"/>
+                    : <span className="text-white font-black text-sm">{b.sender.name[0]}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="font-bold text-[#0a1628] text-sm">{b.sender.name}</span>
+                    <span className="text-xs text-slate-400">{b.sender.email}</span>
+                    <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2.5 py-0.5 rounded-full">{b.recipientCount.toLocaleString()} recipients</span>
+                    <span className="text-xs bg-emerald-100 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full">${b.priceUsd} paid</span>
+                    <span className="text-xs text-slate-400">{timeAgo(b.createdAt)}</span>
+                  </div>
+                  <p className="font-bold text-[#0a1628]">{b.subject}</p>
+                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap line-clamp-5 bg-slate-50 rounded-xl p-3 border border-slate-100">{b.content}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Rejection Reason (optional)</p>
+                <input
+                  value={rejectReasons[b.id] ?? ""}
+                  onChange={e => setRejectReasons(p => ({ ...p, [b.id]: e.target.value }))}
+                  placeholder="Reason shown to sender if rejected…"
+                  className="w-full text-xs font-[inherit] px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] transition-all"/>
+              </div>
+              <div className="flex gap-2">
+                {blastActing[b.id] ? <Loader2 className="w-5 h-5 animate-spin text-slate-400"/> : (<>
+                  <button onClick={() => approveBlast(b.id)}
+                    className="flex items-center gap-1.5 text-xs font-bold bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition-all">
+                    <CheckCircle2 className="w-3.5 h-3.5"/> Approve &amp; Deliver
+                  </button>
+                  <button onClick={() => rejectBlast(b.id)}
+                    className="flex items-center gap-1.5 text-xs font-bold bg-red-50 text-red-500 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-100 transition-all">
+                    <XCircle className="w-3.5 h-3.5"/> Reject
+                  </button>
+                </>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ─── PRO ADS TAB ─── */}
+      {activeTab === "proads" && (
+        <div className="space-y-4">
+          {proAdsLoad ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-[#0a1628]"/></div>
+          ) : proAds.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 bg-white rounded-2xl border border-slate-200">
+              <MonitorPlay className="w-8 h-8 mx-auto mb-3 opacity-30"/>
+              <p className="font-semibold">No pending ads</p>
+              <p className="text-sm mt-1">All advertising submissions are up to date.</p>
+            </div>
+          ) : proAds.map(ad => (
+            <div key={ad.id} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-[#0a1628] overflow-hidden flex items-center justify-center shrink-0">
+                  {ad.user.image ? <img src={ad.user.image} alt={ad.user.name} referrerPolicy="no-referrer" className="w-full h-full object-cover"/> : <span className="text-white font-black text-sm">{ad.user.name[0]}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="font-bold text-[#0a1628] text-sm">{ad.user.name}</span>
+                    <span className="text-xs text-slate-400">{ad.user.email}</span>
+                    <span className="text-xs bg-purple-100 text-purple-700 font-semibold px-2.5 py-0.5 rounded-full">{ad.placement === "CENTER_COLUMN" ? "Center Column" : "Left Column"}</span>
+                    <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2.5 py-0.5 rounded-full">{ad.durationMonths} month{ad.durationMonths > 1 ? "s" : ""}</span>
+                    <span className="text-xs bg-emerald-100 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full">${ad.priceUsd} paid</span>
+                    <span className="text-xs text-slate-400">{timeAgo(ad.createdAt)}</span>
+                  </div>
+                  <p className="font-bold text-[#0a1628]">{ad.title}</p>
+                  {ad.description && <p className="text-sm text-slate-500 mt-0.5">{ad.description}</p>}
+                  <a href={ad.linkUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-0.5 block truncate">{ad.linkUrl}</a>
+                </div>
+              </div>
+              {/* Banner preview */}
+              <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                <img src={ad.imageUrl} alt={ad.title} className="w-full max-h-56 object-cover"
+                  onError={e => { (e.target as HTMLImageElement).alt = "Image failed to load"; }}/>
+                <div className="px-3 py-1.5 text-[10px] text-slate-400 font-medium">
+                  {ad.placement === "CENTER_COLUMN" ? "Center Column — 1200 × 628 px" : "Left Column — 300 × 600 px"}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Rejection Reason (optional)</p>
+                <input value={adRejectReasons[ad.id] ?? ""} onChange={e => setAdRejectReasons(p => ({ ...p, [ad.id]: e.target.value }))}
+                  placeholder="Reason shown to advertiser if rejected…"
+                  className="w-full text-xs font-[inherit] px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] transition-all"/>
+              </div>
+              <div className="flex gap-2">
+                {adActing[ad.id] ? <Loader2 className="w-5 h-5 animate-spin text-slate-400"/> : (<>
+                  <button onClick={() => approveProAd(ad.id)}
+                    className="flex items-center gap-1.5 text-xs font-bold bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition-all">
+                    <CheckCircle2 className="w-3.5 h-3.5"/> Approve &amp; Activate
+                  </button>
+                  <button onClick={() => rejectProAd(ad.id)}
+                    className="flex items-center gap-1.5 text-xs font-bold bg-red-50 text-red-500 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-100 transition-all">
+                    <XCircle className="w-3.5 h-3.5"/> Reject
+                  </button>
+                </>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ─── FEATURED LISTINGS TAB ─── */}
+      {activeTab === "featured" && (
+        <div className="space-y-4">
+          {featLoad ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-[#0a1628]"/></div>
+          ) : featItems.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 bg-white rounded-2xl border border-slate-200">
+              <Star className="w-10 h-10 mx-auto mb-3 opacity-30"/>
+              <p className="font-semibold">No pending featured listing requests</p>
+            </div>
+          ) : featItems.map(f => (
+            <div key={f.id} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+              <div className="flex items-start gap-4">
+                {/* Listing thumbnail */}
+                <div className="w-20 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                  {f.listing.images[0]
+                    ? <img src={f.listing.images[0]} alt={f.listing.title} className="w-full h-full object-cover"/>
+                    : <Star className="w-5 h-5 text-slate-300 m-4.5"/>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-black text-[#0a1628]">{f.listing.title}</span>
+                    <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{f.listing.category}</span>
+                    <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{f.durationMonths} month{f.durationMonths > 1 ? "s" : ""}</span>
+                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">${f.priceUsd} paid</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{f.listing.description}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    {f.user.image && <img src={f.user.image} alt={f.user.name} className="w-5 h-5 rounded-full object-cover"/>}
+                    <span className="text-xs text-slate-500">{f.user.name} · {f.user.email} · {new Date(f.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rejection Reason (optional)</p>
+                <input value={featReasons[f.id] ?? ""} onChange={e => setFeatReasons(p => ({ ...p, [f.id]: e.target.value }))}
+                  placeholder="Reason shown to member if rejected…"
+                  className="w-full text-xs font-[inherit] px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] transition-all"/>
+              </div>
+              <div className="flex gap-2">
+                {featActing[f.id] ? <Loader2 className="w-5 h-5 animate-spin text-slate-400"/> : (<>
+                  <button onClick={() => approveFeatured(f.id)}
+                    className="flex items-center gap-1.5 text-xs font-bold bg-amber-500 text-white px-4 py-2 rounded-xl hover:bg-amber-600 transition-all">
+                    <Star className="w-3.5 h-3.5"/> Approve &amp; Feature
+                  </button>
+                  <button onClick={() => rejectFeatured(f.id)}
+                    className="flex items-center gap-1.5 text-xs font-bold bg-red-50 text-red-500 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-100 transition-all">
+                    <XCircle className="w-3.5 h-3.5"/> Reject
+                  </button>
+                </>)}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
