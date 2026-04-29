@@ -28,7 +28,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={urbanist.variable}>
+    <html lang="en" className={urbanist.variable} suppressHydrationWarning>
       <body>
         <ReduxProvider>
           {children}

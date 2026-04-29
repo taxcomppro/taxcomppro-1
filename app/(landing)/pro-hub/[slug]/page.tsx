@@ -1,431 +1,273 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useCallback, use } from "react";
 import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
-import { Loader2 } from "lucide-react";
 import {
-  ArrowLeft01Icon, UserGroupIcon, Message01Icon, LockIcon, GlobeIcon,
-  MailSend01Icon, ThumbsUpIcon, Clock01Icon, Tick02Icon, UserCircleIcon,
-} from "hugeicons-react";
-
-interface CommunityDetail {
-  id: string; name: string; slug: string; description: string;
-  icon: string | null; isPublic: boolean; memberCount: number; createdAt: string;
-  isMember: boolean;
-  creator: { id: string; name: string; image: string | null };
-  _count: { members: number; posts: number };
-  members: { user: { id: string; name: string; image: string | null } }[];
-}
+  ArrowUp, ArrowDown, MessageSquare, Plus, Loader2,
+  ChevronLeft, Lock, TrendingUp, Clock, Star, Pin, X, Check,
+} from "lucide-react";
 
 interface Post {
-  id: string; content: string; createdAt: string;
-  author: { id: string; name: string; image: string | null; headline: string | null };
-  _count: { comments: number; likes: number };
+  id: string; title: string; body: string; votes: number; isPinned: boolean;
+  author: { id: string; name: string; image: string | null };
+  _count: { comments: number };
+  createdAt: string;
+}
+interface Forum {
+  id: string; name: string; slug: string; description: string | null;
+  image: string | null; isAdminOnly: boolean; isPinned: boolean; badge: string | null;
+  _count: { posts: number };
 }
 
-const PALETTE = [
-  "from-blue-600 to-indigo-700", "from-emerald-500 to-teal-700",
-  "from-amber-500 to-orange-600", "from-purple-600 to-violet-700",
-];
-
-function timeAgo(date: string) {
-  const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s/60)}m ago`;
-  if (s < 86400) return `${Math.floor(s/3600)}h ago`;
-  return `${Math.floor(s/86400)}d ago`;
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return `${Math.floor(d / 30)}mo ago`;
 }
 
-/* ─── Skeleton post ────────────────────────────────────────── */
-function SkeletonPost() {
+/* ─── New Post Modal ─── */
+function NewPostModal({ forumSlug, onSave, onClose }: {
+  forumSlug: string;
+  onSave: (post: Post) => void;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [body,  setBody]  = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState("");
+
+  const handleSave = async () => {
+    if (!title.trim() || !body.trim()) { setError("Title and body are required"); return; }
+    setSaving(true); setError("");
+    try {
+      const res = await fetch(`/api/pro-hub/${forumSlug}/posts`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, body }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? "Failed"); }
+      const post = await res.json();
+      onSave(post);
+      onClose();
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Failed");
+    } finally { setSaving(false); }
+  };
+
   return (
-    <div className="bg-white rounded-2xl p-5 animate-pulse space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-slate-200 shrink-0" />
-        <div className="flex-1 space-y-1.5">
-          <div className="h-3.5 bg-slate-200 rounded w-1/3" />
-          <div className="h-3 bg-slate-200 rounded w-1/4" />
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h2 className="font-black text-[#0a1628] text-lg">New Discussion</h2>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
+            <X className="w-4 h-4 text-slate-500" />
+          </button>
         </div>
-      </div>
-      <div className="space-y-2">
-        <div className="h-3 bg-slate-200 rounded w-full" />
-        <div className="h-3 bg-slate-200 rounded w-5/6" />
-        <div className="h-3 bg-slate-200 rounded w-4/6" />
+        <div className="p-6 space-y-4">
+          {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-2.5 rounded-xl">{error}</div>}
+          <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1">Title *</label>
+            <input value={title} onChange={e => setTitle(e.target.value)}
+              placeholder="What do you want to discuss?"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#0a1628]" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1">Body *</label>
+            <textarea value={body} onChange={e => setBody(e.target.value)} rows={6}
+              placeholder="Share your thoughts, questions, or insights…"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-[#0a1628]" />
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100">
+          <button onClick={onClose} className="text-sm font-semibold text-slate-500 px-4 py-2 rounded-xl hover:bg-slate-50 transition-all">Cancel</button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all disabled:opacity-60">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {saving ? "Posting…" : "Post Discussion"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-export default function CommunityDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
+/* ─── Post Row ─── */
+function PostRow({ p, forumSlug, onVote }: {
+  p: Post; forumSlug: string;
+  onVote: (id: string, v: 1 | -1) => void;
+}) {
+  return (
+    <div className="flex items-start gap-4 px-5 py-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition-colors group">
+      {/* Vote */}
+      <div className="flex flex-col items-center gap-0.5 pt-0.5 shrink-0">
+        <button onClick={() => onVote(p.id, 1)}
+          className="p-1 rounded hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors">
+          <ArrowUp className="w-3.5 h-3.5" />
+        </button>
+        <span className="text-xs font-black text-[#0a1628] tabular-nums">{p.votes}</span>
+        <button onClick={() => onVote(p.id, -1)}
+          className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-400 transition-colors">
+          <ArrowDown className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Content */}
+      <Link href={`/pro-hub/${forumSlug}/${p.id}`} className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          {p.isPinned && <Pin className="w-3 h-3 text-amber-500 shrink-0" />}
+          <h3 className="font-bold text-[#0a1628] text-sm leading-snug group-hover:text-[#1a3a6b] transition-colors">{p.title}</h3>
+        </div>
+        <p className="text-[11px] text-slate-400 line-clamp-1 mb-2">{p.body}</p>
+        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+          <div className="flex items-center gap-1">
+            {p.author.image
+              ? <img src={p.author.image} alt="" className="w-4 h-4 rounded-full object-cover" />
+              : <div className="w-4 h-4 rounded-full bg-[#0a1628] flex items-center justify-center text-white text-[8px] font-black">{p.author.name[0]}</div>}
+            <span className="font-medium text-slate-500">{p.author.name}</span>
+          </div>
+          <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{p._count.comments}</span>
+          <span>{timeAgo(p.createdAt)}</span>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+/* ─── Page ─── */
+export default function ForumDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const user     = useAppSelector(s => s.auth.user);
 
-  const [community,    setCommunity]    = useState<CommunityDetail | null>(null);
-  const [posts,        setPosts]        = useState<Post[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [postsLoading, setPostsLoading] = useState(true);
-  const [notFound,     setNotFound]     = useState(false);
-  const [isMember,     setIsMember]     = useState(false);
-  const [joining,      setJoining]      = useState(false);
-  const [draft,        setDraft]        = useState("");
-  const [posting,      setPosting]      = useState(false);
-  const [activeTab,    setActiveTab]    = useState<"posts"|"members"|"about">("posts");
-  const [likedPosts,   setLikedPosts]   = useState<Record<string, boolean>>({});
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [forum,   setForum]   = useState<Forum | null>(null);
+  const [posts,   setPosts]   = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sort,    setSort]    = useState<"hot" | "new" | "top">("hot");
+  const [showNew, setShowNew] = useState(false);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    fetch(`/api/pro-hub/${slug}`)
-      .then(r => { if (!r.ok) { setNotFound(true); return null; } return r.json(); })
-      .then((data: CommunityDetail | null) => {
-        if (data) { setCommunity(data); setIsMember(data.isMember); }
-      })
-      .catch(() => setNotFound(true))
+  const canPost = user && (!forum?.isAdminOnly || user.role === "ADMIN");
+
+  const load = useCallback(() => {
+    setLoading(true);
+    fetch(`/api/pro-hub/${slug}?sort=${sort}`)
+      .then(r => r.json())
+      .then(d => { setForum(d.forum ?? null); setPosts(Array.isArray(d.posts) ? d.posts : []); })
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, sort]);
 
-  useEffect(() => {
-    setPostsLoading(true);
-    fetch(`/api/pro-hub/${slug}/posts`)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setPosts(Array.isArray(data) ? data : []))
-      .catch(() => {})
-      .finally(() => setPostsLoading(false));
-  }, [slug]);
+  useEffect(() => { load(); }, [load]);
 
-  const handleJoin = async () => {
-    if (!user) { window.location.href = `/login?redirect=/pro-hub/${slug}`; return; }
-    setJoining(true);
-    try {
-      const res = await fetch("/api/pro-hub/join", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ communityId: community?.id }),
-      });
-      if (res.ok || res.status === 409) {
-        setIsMember(true);
-        if (res.ok) setCommunity(c => c ? { ...c, memberCount: c.memberCount + 1 } : c);
-      }
-    } catch { /* ignore */ } finally { setJoining(false); }
-  };
-
-  const handlePost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!draft.trim()) return;
-    setPosting(true);
-    try {
-      const res = await fetch(`/api/pro-hub/${slug}/posts`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: draft }),
-      });
-      if (res.ok) {
-        const newPost = await res.json();
-        setPosts(prev => [newPost, ...prev]);
-        setDraft("");
-        setCommunity(c => c ? { ...c, _count: { ...c._count, posts: c._count.posts + 1 } } : c);
-      }
-    } catch { /* ignore */ } finally { setPosting(false); }
-  };
-
-  const handleLike = async (postId: string) => {
+  const handleVote = async (postId: string, value: 1 | -1) => {
     if (!user) return;
-    const wasLiked = likedPosts[postId];
-    setLikedPosts(p => ({ ...p, [postId]: !wasLiked }));
-    setPosts(prev => prev.map(p => p.id === postId
-      ? { ...p, _count: { ...p._count, likes: p._count.likes + (wasLiked ? -1 : 1) } }
-      : p));
-    try { await fetch(`/api/feed/${postId}/like`, { method: "POST" }); }
-    catch { /* ignore */ }
+    const res = await fetch(`/api/pro-hub/${slug}/posts/${postId}/vote`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ value }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, votes: data.votes } : p));
+    }
   };
-
-  if (loading) return (
-    <div className="min-h-screen bg-slate-100 pt-4 pb-12">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="h-36 bg-slate-200 rounded-2xl animate-pulse mb-4" />
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5">
-          <div className="space-y-4">
-            {[1,2,3].map(i => <SkeletonPost key={i} />)}
-          </div>
-          <div className="space-y-3">
-            <div className="bg-white rounded-2xl p-4 animate-pulse h-32" />
-            <div className="bg-white rounded-2xl p-4 animate-pulse h-24" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (notFound || !community) return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center text-center px-4">
-      <div className="bg-white rounded-2xl p-12 max-w-md">
-        <UserGroupIcon className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-        <h1 className="text-xl font-black text-[#0a1628] mb-2">Community Not Found</h1>
-        <Link href="/pro-hub"
-          className="inline-flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-2.5 rounded-xl mt-4 hover:bg-[#1a3a6b] transition-all">
-          <ArrowLeft01Icon className="w-4 h-4" /> Back to Pro Hub
-        </Link>
-      </div>
-    </div>
-  );
-
-  const gradient = PALETTE[community.name.charCodeAt(0) % PALETTE.length];
-  const isEmoji  = community.icon && community.icon.length <= 4;
 
   return (
-    <div className="min-h-screen bg-slate-100 pt-4 pb-12">
-      <div className="max-w-5xl mx-auto px-4">
-
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
-          <Link href="/pro-hub" className="hover:text-[#0a1628] transition-colors flex items-center gap-1 font-medium">
-            <ArrowLeft01Icon className="w-3.5 h-3.5" /> Pro Hub
+    <div className="min-h-screen bg-[#f4f6fb]">
+      {/* Banner */}
+      <div className="relative h-48 bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] overflow-hidden">
+        {forum?.image && <img src={forum.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />}
+        <div className="absolute inset-0 flex flex-col justify-end px-6 pb-5">
+          <Link href="/pro-hub" className="flex items-center gap-1.5 text-slate-300 hover:text-white text-xs font-semibold mb-3 w-fit transition-colors">
+            <ChevronLeft className="w-3.5 h-3.5" /> Pro Hub
           </Link>
-          <span className="text-slate-300">/</span>
-          <span className="text-slate-600 font-medium">{community.name}</span>
-        </div>
-
-        {/* Hero banner */}
-        <div className={`bg-gradient-to-br ${gradient} rounded-2xl h-36 relative mb-5`}>
-          {/* Community icon */}
-          <div className="absolute -bottom-7 left-5 w-20 h-20 rounded-2xl border-4 border-white bg-white shadow flex items-center justify-center overflow-hidden">
-            {isEmoji
-              ? <span className="text-3xl">{community.icon}</span>
-              : community.icon
-                ? <img src={community.icon} alt={community.name} className="w-full h-full object-cover" />
-                : <span className="text-[#0a1628] font-black text-3xl">{community.name[0]}</span>}
-          </div>
-          {/* Private badge */}
-          {!community.isPublic && (
-            <div className="absolute top-4 right-4 flex items-center gap-1 bg-black/30 text-white text-[11px] font-bold px-3 py-1.5 rounded-full">
-              <LockIcon className="w-3 h-3" /> Private
-            </div>
-          )}
-        </div>
-
-        {/* Community meta */}
-        <div className="flex items-start justify-between gap-4 mb-5 pt-8">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-black text-[#0a1628]">{community.name}</h1>
-              {community.isPublic
-                ? <GlobeIcon className="w-4 h-4 text-slate-400" />
-                : <LockIcon className="w-4 h-4 text-slate-400" />}
-            </div>
-            <p className="text-slate-500 text-sm mt-1 max-w-xl">{community.description}</p>
-            <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
-              <span className="flex items-center gap-1">
-                <UserGroupIcon className="w-3.5 h-3.5" />{community.memberCount.toLocaleString()} members
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-black text-white">{forum?.name ?? "Loading…"}</h1>
+            {forum?.isAdminOnly && (
+              <span className="flex items-center gap-1 text-[10px] font-black bg-red-500 text-white px-2 py-0.5 rounded-full">
+                <Lock className="w-2.5 h-2.5" /> Admin Posts Only
               </span>
-              <span className="flex items-center gap-1">
-                <Message01Icon className="w-3.5 h-3.5" />{community._count.posts} posts
-              </span>
-            </div>
-          </div>
-
-          {/* Single Join/Member button */}
-          {isMember ? (
-            <span className="flex items-center gap-1.5 text-sm font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl shrink-0">
-              <Tick02Icon className="w-4 h-4" /> Member
-            </span>
-          ) : (
-            <button onClick={handleJoin} disabled={joining}
-              className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all disabled:opacity-60 shrink-0">
-              {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserGroupIcon className="w-4 h-4" />}
-              {joining ? "Joining…" : "Join"}
-            </button>
-          )}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-slate-200 mb-5">
-          {(["posts","members","about"] as const).map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2.5 text-sm font-semibold capitalize transition-all border-b-2 -mb-px ${
-                activeTab === tab ? "border-[#0a1628] text-[#0a1628]" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-              {tab === "posts"
-                ? `Posts${community._count.posts > 0 ? ` (${community._count.posts})` : ""}`
-                : tab === "members"
-                  ? `Members (${community.memberCount})`
-                  : "About"}
-            </button>
-          ))}
-        </div>
-
-        {/* Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5 items-start">
-
-          {/* ── Main column ── */}
-          <div className="space-y-4">
-
-            {/* Posts tab */}
-            {activeTab === "posts" && (
-              <>
-                {/* Composer — only if member */}
-                {isMember ? (
-                  <form onSubmit={handlePost} className="bg-white rounded-2xl p-4">
-                    <div className="flex gap-3">
-                      <div className="w-9 h-9 rounded-full bg-[#0a1628] overflow-hidden flex items-center justify-center shrink-0">
-                        {user?.image
-                          ? <img src={user.image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                          : <span className="text-white font-bold text-sm">{user?.name?.[0]?.toUpperCase()}</span>}
-                      </div>
-                      <div className="flex-1">
-                        <textarea ref={textareaRef} value={draft} onChange={e => setDraft(e.target.value)} rows={2}
-                          placeholder={`Share something with ${community.name}…`}
-                          className="w-full bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-[inherit] outline-none resize-none border border-slate-100 focus:border-slate-300 transition-all" />
-                        <div className="flex justify-end mt-2">
-                          <button type="submit" disabled={posting || !draft.trim()}
-                            className="flex items-center gap-1.5 bg-[#0a1628] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-[#1a3a6b] transition-all disabled:opacity-50">
-                            {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MailSend01Icon className="w-3.5 h-3.5" />}
-                            Post
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </form>
-                ) : (
-                  /* Non-members: soft gate, no extra join button */
-                  <div className="bg-white rounded-2xl px-5 py-6 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                      <UserCircleIcon className="w-5 h-5 text-slate-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-slate-600">Join to participate in discussions</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Members can post and like.</p>
-                    </div>
-                    <button onClick={handleJoin} disabled={joining}
-                      className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-4 py-2 rounded-xl hover:bg-[#1a3a6b] transition-all disabled:opacity-60 shrink-0">
-                      {joining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                      {joining ? "Joining…" : "Join"}
-                    </button>
-                  </div>
-                )}
-
-                {/* Posts list */}
-                {postsLoading ? (
-                  <>{[1,2].map(i => <SkeletonPost key={i} />)}</>
-                ) : posts.length === 0 ? (
-                  <div className="bg-white rounded-2xl py-16 text-center">
-                    <Message01Icon className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                    <p className="font-semibold text-slate-400">No posts yet — be the first!</p>
-                  </div>
-                ) : (
-                  posts.map(post => (
-                    <div key={post.id} className="bg-white rounded-2xl p-5">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-9 h-9 rounded-full bg-[#0a1628] overflow-hidden flex items-center justify-center shrink-0">
-                          {post.author.image
-                            ? <img src={post.author.image} alt={post.author.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                            : <span className="text-white font-bold text-sm">{post.author.name?.[0]?.toUpperCase()}</span>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-[#0a1628] text-sm">{post.author.name}</div>
-                          {post.author.headline && <div className="text-xs text-slate-400">{post.author.headline}</div>}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-slate-400 shrink-0">
-                          <Clock01Icon className="w-3 h-3" />{timeAgo(post.createdAt)}
-                        </div>
-                      </div>
-                      <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line mb-3">{post.content}</p>
-                      <div className="flex items-center gap-2 pt-3 border-t border-slate-50">
-                        <button onClick={() => handleLike(post.id)}
-                          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all ${likedPosts[post.id] ? "bg-blue-50 text-blue-600" : "text-slate-400 hover:bg-slate-50 hover:text-blue-600"}`}>
-                          <ThumbsUpIcon className="w-3.5 h-3.5" />{post._count.likes + (likedPosts[post.id] ? 0 : 0)}
-                        </button>
-                        <button className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:bg-slate-50 hover:text-slate-600 px-3 py-1.5 rounded-xl transition-all">
-                          <Message01Icon className="w-3.5 h-3.5" />{post._count.comments} {post._count.comments === 1 ? "Comment" : "Comments"}
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </>
             )}
-
-            {/* Members tab */}
-            {activeTab === "members" && (
-              <div className="bg-white rounded-2xl p-5">
-                <h2 className="font-black text-[#0a1628] mb-4">Members ({community.memberCount.toLocaleString()})</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {community.members.map(m => (
-                    <div key={m.user.id} className="flex flex-col items-center gap-2 bg-slate-50 rounded-xl p-3 text-center">
-                      <div className="w-10 h-10 rounded-full bg-[#0a1628] overflow-hidden flex items-center justify-center">
-                        {m.user.image
-                          ? <img src={m.user.image} alt={m.user.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                          : <span className="text-white font-bold text-sm">{m.user.name?.[0]?.toUpperCase()}</span>}
-                      </div>
-                      <div className="text-xs font-semibold text-[#0a1628] line-clamp-1">{m.user.name}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* About tab */}
-            {activeTab === "about" && (
-              <div className="bg-white rounded-2xl p-5 space-y-4">
-                <h2 className="font-black text-[#0a1628]">About {community.name}</h2>
-                <p className="text-slate-600 text-sm leading-relaxed">{community.description}</p>
-                <div className="border-t border-slate-100 pt-4 space-y-3">
-                  {[
-                    { label: "Created by",  value: community.creator.name },
-                    { label: "Visibility",  value: community.isPublic ? "Public" : "Private" },
-                    { label: "Members",     value: community.memberCount.toLocaleString() },
-                    { label: "Posts",       value: community._count.posts },
-                  ].map(r => (
-                    <div key={r.label} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-400">{r.label}</span>
-                      <span className="font-bold text-[#0a1628]">{r.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {forum?.badge && (
+              <span className="text-[10px] font-black bg-[#d4a017] text-[#0a1628] px-2 py-0.5 rounded-full">{forum.badge}</span>
             )}
           </div>
+          {forum?.description && <p className="text-slate-300 text-sm mt-1 max-w-2xl line-clamp-1">{forum.description}</p>}
+        </div>
+      </div>
 
-          {/* ── Sticky right sidebar ── */}
-          <div className="hidden lg:block self-start sticky top-[100px] space-y-3">
+      <div className="max-w-[900px] mx-auto px-4 py-6">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-xl p-1">
+            {([["hot", TrendingUp, "Hot"], ["new", Clock, "New"], ["top", Star, "Top"]] as const).map(([key, Icon, label]) => (
+              <button key={key} onClick={() => setSort(key)}
+                className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${sort === key ? "bg-[#0a1628] text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                <Icon className="w-3 h-3" /> {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            {canPost && (
+              <button onClick={() => setShowNew(true)}
+                className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all">
+                <Plus className="w-4 h-4" /> New Discussion
+              </button>
+            )}
+          </div>
+        </div>
 
-            {/* Stats */}
-            <div className="bg-white rounded-2xl p-4 space-y-3">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Community</p>
-              {[
-                { Icon: UserGroupIcon, label: "Members",     val: community.memberCount.toLocaleString() },
-                { Icon: Message01Icon, label: "Discussions", val: community._count.posts },
-              ].map(({ Icon, label, val }) => (
-                <div key={label} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400 flex items-center gap-1.5 text-xs">
-                    <Icon className="w-3.5 h-3.5" />{label}
-                  </span>
-                  <span className="font-black text-[#0a1628]">{val}</span>
+        {/* Posts */}
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-50 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">All Discussions</span>
+            <span className="text-xs text-slate-400">{loading ? "…" : `${posts.length} post${posts.length !== 1 ? "s" : ""}`}</span>
+          </div>
+
+          {loading ? (
+            <div className="divide-y divide-slate-50">
+              {[1,2,3].map(i => (
+                <div key={i} className="flex items-start gap-4 px-5 py-4 animate-pulse">
+                  <div className="w-6 flex flex-col items-center gap-1 pt-1">
+                    <div className="w-4 h-4 bg-slate-200 rounded" />
+                    <div className="w-3 h-3 bg-slate-200 rounded" />
+                    <div className="w-4 h-4 bg-slate-200 rounded" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-200 rounded w-2/3" />
+                    <div className="h-3 bg-slate-200 rounded w-full" />
+                    <div className="h-3 bg-slate-200 rounded w-1/3" />
+                  </div>
                 </div>
               ))}
             </div>
-
-            {/* Members avatars — no join button here */}
-            <div className="bg-white rounded-2xl p-4">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Members</p>
-              <div className="flex flex-wrap gap-2">
-                {community.members.slice(0,10).map(m => (
-                  <div key={m.user.id} title={m.user.name}
-                    className="w-9 h-9 rounded-full bg-[#0a1628] overflow-hidden flex items-center justify-center border-2 border-white">
-                    {m.user.image
-                      ? <img src={m.user.image} alt={m.user.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                      : <span className="text-white font-bold text-xs">{m.user.name?.[0]?.toUpperCase()}</span>}
-                  </div>
-                ))}
-                {community.memberCount > 10 && (
-                  <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">
-                    +{community.memberCount - 10}
-                  </div>
-                )}
-              </div>
+          ) : posts.length === 0 ? (
+            <div className="py-16 text-center">
+              <MessageSquare className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+              <p className="text-sm font-bold text-slate-400">No discussions yet</p>
+              <p className="text-xs text-slate-300 mt-1">Be the first to start a conversation.</p>
+              {canPost && (
+                <button onClick={() => setShowNew(true)}
+                  className="inline-flex items-center gap-2 mt-4 bg-[#0a1628] text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all">
+                  <Plus className="w-4 h-4" /> New Discussion
+                </button>
+              )}
             </div>
-
-          </div>
+          ) : (
+            <div>
+              {posts.map(p => (
+                <PostRow key={p.id} p={p} forumSlug={slug} onVote={handleVote} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {showNew && (
+        <NewPostModal forumSlug={slug}
+          onSave={post => setPosts(prev => [post, ...prev])}
+          onClose={() => setShowNew(false)}
+        />
+      )}
     </div>
   );
 }

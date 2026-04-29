@@ -9,7 +9,11 @@ export async function GET() {
 
   const listings = await prisma.marketplaceListing.findMany({
     where: { userId: session.user.id },
-    select: { id: true, title: true, category: true, images: true, status: true },
+    select: {
+      id: true, title: true, category: true, images: true, status: true,
+      price: true, description: true, tags: true, slug: true,
+      viewCount: true, isFeatured: true, createdAt: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 

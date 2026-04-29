@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-const publicRoutes   = ["/", "/marketplace", "/pro-hub", "/login", "/register", "/pricing"];
-const publicPrefixes = ["/marketplace", "/pro-hub", "/courses", "/pricing"];
+const publicRoutes   = ["/", "/marketplace", "/communities", "/login", "/register", "/pricing"];
+const publicPrefixes = ["/marketplace", "/communities", "/courses", "/pricing", "/seller-dashboard", "/pro-hub"];
 const authRoutes     = ["/login", "/register"];
 // These are in (landing) now but require auth
 const protectedLandingRoutes = ["/notifications", "/profile"];

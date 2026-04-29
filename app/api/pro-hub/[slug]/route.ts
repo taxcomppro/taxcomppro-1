@@ -1,29 +1,74 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const session = await auth.api.getSession({ headers: req.headers });
+type Params = { params: Promise<{ slug: string }> };
 
-  const community = await prisma.community.findUnique({
+// GET — forum detail + paginated posts
+export async function GET(req: NextRequest, { params }: Params) {
+  const { slug } = await params;
+  const { searchParams } = new URL(req.url);
+  const sort   = searchParams.get("sort") ?? "hot"; // hot | new | top
+  const page   = parseInt(searchParams.get("page") ?? "1");
+  const limit  = 20;
+  const skip   = (page - 1) * limit;
+
+  const forum = await prisma.forum.findUnique({
     where: { slug },
     include: {
-      creator: { select: { id: true, name: true, image: true } },
-      _count:  { select: { members: true, posts: true } },
-      members: {
-        take: 8, orderBy: { joinedAt: "asc" },
-        include: { user: { select: { id: true, name: true, image: true } } },
-      },
+      createdBy: { select: { id: true, name: true, image: true } },
+      _count: { select: { posts: true } },
     },
   });
-  if (!community) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!forum) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const isMember = session
-    ? !!(await prisma.communityMember.findUnique({
-        where: { userId_communityId: { userId: session.user.id, communityId: community.id } },
-      }))
-    : false;
+  const orderBy =
+    sort === "top"  ? { votes: "desc" as const } :
+    sort === "new"  ? { createdAt: "desc" as const } :
+    /* hot */         { votes: "desc" as const };
 
-  return NextResponse.json({ ...community, isMember });
+  const posts = await prisma.forumPost.findMany({
+    where: { forumId: forum.id },
+    include: {
+      author: { select: { id: true, name: true, image: true } },
+      _count: { select: { comments: true } },
+    },
+    orderBy: [{ isPinned: "desc" }, orderBy],
+    skip,
+    take: limit,
+  });
+
+  return NextResponse.json({ forum, posts });
+}
+
+// PATCH — update forum (ADMIN)
+export async function PATCH(req: NextRequest, { params }: Params) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user as { role?: string };
+  if (user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { slug } = await params;
+  const body = await req.json();
+  const forum = await prisma.forum.update({
+    where: { slug },
+    data: {
+      name: body.name, description: body.description, image: body.image,
+      isAdminOnly: body.isAdminOnly, isPinned: body.isPinned, badge: body.badge,
+    },
+  });
+  return NextResponse.json(forum);
+}
+
+// DELETE — delete forum (ADMIN)
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user as { role?: string };
+  if (user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { slug } = await params;
+  await prisma.forum.delete({ where: { slug } });
+  return NextResponse.json({ success: true });
 }

@@ -121,8 +121,10 @@ model User {
   certifications   String[]
   languages        String[]
   mediaPhotos      String[]
-  stripeCustomerId String?
-  createdAt        DateTime         @default(now())
+  stripeCustomerId   String?
+  stripeAccountId    String?  // Stripe Connect Express account ID
+  stripeOnboarded    Boolean  @default(false)
+  createdAt          DateTime @default(now())
   updatedAt        DateTime         @updatedAt
 
   sessions            Session[]
@@ -154,6 +156,10 @@ model User {
   messageBlasts       MessageBlast[]
   proAds              ProAd[]
   featuredListings    FeaturedListingRequest[]
+  forums              Forum[]
+  forumPosts          ForumPost[]
+  forumComments       ForumComment[]
+  forumVotes          ForumVote[]
 
   @@map("users")
 }
@@ -288,6 +294,7 @@ model Post {
   authorId    String
   communityId String?
   images      String[]
+  videoUrl    String?
   likeCount   Int      @default(0)
   commentCount Int     @default(0)
   createdAt   DateTime @default(now())
@@ -730,4 +737,68 @@ model ProAd {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("pro_ads")
+}
+
+model Forum {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String?
+  image       String?
+  isAdminOnly Boolean     @default(false)
+  isPinned    Boolean     @default(false)
+  badge       String?
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  posts       ForumPost[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("forums")
+}
+
+model ForumPost {
+  id        String         @id @default(cuid())
+  title     String
+  body      String         @db.Text
+  forumId   String
+  forum     Forum          @relation(fields: [forumId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User           @relation(fields: [authorId], references: [id])
+  votes     Int            @default(0)
+  isPinned  Boolean        @default(false)
+  comments  ForumComment[]
+  userVotes ForumVote[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("forum_posts")
+}
+
+model ForumComment {
+  id        String         @id @default(cuid())
+  body      String         @db.Text
+  postId    String
+  post      ForumPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User           @relation(fields: [authorId], references: [id])
+  parentId  String?
+  parent    ForumComment?  @relation("Replies", fields: [parentId], references: [id])
+  replies   ForumComment[] @relation("Replies")
+  votes     Int            @default(0)
+  createdAt DateTime       @default(now())
+
+  @@map("forum_comments")
+}
+
+model ForumVote {
+  id     String    @id @default(cuid())
+  postId String
+  post   ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User      @relation(fields: [userId], references: [id])
+  value  Int
+
+  @@unique([postId, userId])
+  @@map("forum_votes")
 }

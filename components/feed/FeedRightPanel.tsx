@@ -6,7 +6,7 @@ import { UserGroupIcon, ShoppingBag01Icon, ArrowUpRight01Icon, ArrowRight01Icon,
 
 interface Community {
   id: string; name: string; description: string;
-  memberCount: number; slug: string;
+  memberCount: number; slug: string; isMember: boolean;
 }
 
 interface Listing {
@@ -24,17 +24,23 @@ export default function FeedRightPanel() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/pro-hub").then(r => r.json()),
+      fetch("/api/communities").then(r => r.json()),
       fetch("/api/marketplace").then(r => r.json()),
     ]).then(([c, l]) => {
-      setCommunities(Array.isArray(c) ? c.slice(0, 3) : []);
+      const comms: Community[] = Array.isArray(c) ? c.slice(0, 3) : [];
+      setCommunities(comms);
+      // Seed joinedMap from server-returned isMember field
+      const initial: Record<string, boolean> = {};
+      comms.forEach(item => { if (item.isMember) initial[item.id] = true; });
+      setJoinedMap(initial);
       setListings(Array.isArray(l) ? l.slice(0, 3) : []);
     }).finally(() => setLoading(false));
   }, []);
 
+
   const handleJoin = async (id: string) => {
     try {
-      const res = await fetch("/api/pro-hub/join", {
+      const res = await fetch("/api/communities/join", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ communityId: id }),
       });
@@ -79,7 +85,7 @@ export default function FeedRightPanel() {
               <UserGroupIcon className="w-4 h-4 text-[#d4a017]" />
               <h3 className="font-bold text-[#0a1628] text-sm">Communities</h3>
             </div>
-            <Link href="/pro-hub" className="text-[11px] font-semibold text-[#d4a017] hover:underline flex items-center gap-0.5">
+            <Link href="/communities" className="text-[11px] font-semibold text-[#d4a017] hover:underline flex items-center gap-0.5">
               See all <ArrowRight01Icon className="w-3 h-3" />
             </Link>
           </div>

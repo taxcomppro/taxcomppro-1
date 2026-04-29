@@ -4,7 +4,7 @@ import { Suspense, useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
-import { Loader2, Send, Users, DollarSign, CheckCircle2, Clock, XCircle, ChevronRight, Megaphone, BarChart3, Lock, MonitorPlay, Image as ImageIcon, Calendar, ExternalLink, Tv, Star, ShoppingBag } from "lucide-react";
+import { Loader2, Send, Users, DollarSign, CheckCircle2, Clock, XCircle, ChevronRight, Megaphone, BarChart3, Lock, MonitorPlay, Image as ImageIcon, Calendar, ExternalLink, Tv, Star, ShoppingBag, Trash2 } from "lucide-react";
 import { BLAST_TIERS } from "@/lib/blast-pricing";
 
 const US_STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
@@ -76,6 +76,26 @@ function ProMarketingContent() {
   const [adsLoading, setAdsLoading]   = useState(true);
 
   const adPrice = (adPlacement === "CENTER_COLUMN" ? 199 : 299) * adDuration;
+
+  // ── Delete state ──
+  const [deletingAdId, setDeletingAdId]     = useState("");
+  const [deletingFeatId, setDeletingFeatId] = useState("");
+
+  const handleDeleteAd = async (id: string) => {
+    if (!confirm("Remove this ad?")) return;
+    setDeletingAdId(id);
+    const res = await fetch(`/api/pro-ads/${id}`, { method: "DELETE" });
+    if (res.ok) setMyAds(p => p.filter(a => a.id !== id));
+    setDeletingAdId("");
+  };
+
+  const handleDeleteFeat = async (id: string) => {
+    if (!confirm("Cancel this featured request?")) return;
+    setDeletingFeatId(id);
+    const res = await fetch(`/api/featured-listing/${id}`, { method: "DELETE" });
+    if (res.ok) setMyFeatured(p => p.filter(f => f.id !== id));
+    setDeletingFeatId("");
+  };
 
   // ── Featured Listing state ──
   const [featuredListingId, setFeaturedListingId] = useState("");
@@ -267,33 +287,48 @@ function ProMarketingContent() {
           </div>
           <h1 className="text-4xl font-black mb-2">Pro Marketing</h1>
           <p className="text-white/60 max-w-xl">Grow your reach with message blasts and display advertising. Marketplace Plus exclusive.</p>
-          {/* Tab switcher */}
-          <div className="flex gap-2 mt-6">
-            <button onClick={() => setMainTab("blast")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${mainTab==="blast" ? "bg-[#f0c040] text-[#0a1628]" : "bg-white/10 text-white/70 hover:bg-white/20"}`}>
-              <Megaphone className="w-4 h-4" /> Message Blast
-            </button>
-            <button onClick={() => setMainTab("advertising")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${mainTab==="advertising" ? "bg-[#f0c040] text-[#0a1628]" : "bg-white/10 text-white/70 hover:bg-white/20"}`}>
-              <MonitorPlay className="w-4 h-4" /> Pro Advertising
-            </button>
-            <button onClick={() => setMainTab("featured")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${mainTab==="featured" ? "bg-[#f0c040] text-[#0a1628]" : "bg-white/10 text-white/70 hover:bg-white/20"}`}>
-              <Star className="w-4 h-4" /> Featured Listing
-            </button>
+          {/* ── Main Tabs ── */}
+          <div className="mt-8 grid grid-cols-3 gap-3">
+            {([
+              { key: "blast",       icon: Megaphone,    label: "Message Blast",    sub: "Targeted inbox campaigns" },
+              { key: "advertising", icon: MonitorPlay,  label: "Pro Advertising",   sub: "Banner ads on the platform" },
+              { key: "featured",    icon: Star,         label: "Featured Listing",  sub: "Top placement in marketplace" },
+            ] as const).map(t => {
+              const Icon = t.icon;
+              const active = mainTab === t.key;
+              return (
+                <button key={t.key} onClick={() => setMainTab(t.key)}
+                  className={`flex flex-col items-start gap-1 px-5 py-4 rounded-2xl font-bold text-sm transition-all ${
+                    active ? "bg-[#f0c040] text-[#0a1628]" : "bg-white/10 text-white hover:bg-white/20"
+                  }`}>
+                  <Icon className="w-5 h-5 mb-0.5" />
+                  <span className="font-black text-sm">{t.label}</span>
+                  <span className={`text-[11px] font-normal leading-tight ${active ? "text-[#0a1628]/60" : "text-white/50"}`}>{t.sub}</span>
+                </button>
+              );
+            })}
           </div>
-          {quota && (
-            <div className="mt-5 inline-flex items-center gap-3 bg-white/10 border border-white/15 rounded-full px-5 py-2">
-              <BarChart3 className="w-4 h-4 text-[#f0c040]" />
-              <span className="text-sm text-white/70"><strong className="text-white">{quota.remaining}</strong> of {quota.limit} blasts remaining this month</span>
-            </div>
-          )}
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+      <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
         {/* Blast tab content */}
         {mainTab === "blast" && (<>
+        {/* Quota pill — only in blast tab */}
+        {quota && (
+          <div className="flex items-center gap-3 bg-[#0a1628] text-white rounded-2xl px-5 py-3.5">
+            <BarChart3 className="w-5 h-5 text-[#f0c040] shrink-0" />
+            <div>
+              <span className="text-sm font-bold">{quota.remaining} of {quota.limit} blasts remaining this month</span>
+              {quota.remaining === 0 && <p className="text-xs text-white/50 mt-0.5">You've used all your blasts for this month.</p>}
+            </div>
+            <div className="ml-auto flex gap-1">
+              {Array.from({ length: quota.limit }).map((_, i) => (
+                <div key={i} className={`w-2.5 h-2.5 rounded-full ${i < quota.used ? "bg-[#f0c040]" : "bg-white/20"}`} />
+              ))}
+            </div>
+          </div>
+        )}
         {success && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-4 flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
@@ -507,117 +542,176 @@ function ProMarketingContent() {
             </div>
           )}
 
-          {/* Placement picker */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 space-y-6">
-            <div>
-              <h2 className="text-xl font-black text-[#0a1628] mb-1">Choose Placement</h2>
-              <p className="text-slate-500 text-sm">Select where your ad will appear on the platform.</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {AD_PLACEMENTS.map(p => {
-                const Icon = p.icon;
-                const active = adPlacement === p.key;
-                return (
-                  <button key={p.key} onClick={() => setAdPlacement(p.key as "CENTER_COLUMN"|"LEFT_COLUMN")}
-                    className={`text-left p-5 rounded-2xl border-2 transition-all ${active ? "border-[#0a1628] bg-[#0a1628]/5" : "border-slate-200 hover:border-slate-300"}`}>
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${active ? "bg-[#0a1628]" : "bg-slate-100"}`}>
-                      <Icon className={`w-5 h-5 ${active ? "text-[#f0c040]" : "text-slate-500"}`} />
-                    </div>
-                    <p className={`font-black text-base ${active ? "text-[#0a1628]" : "text-slate-700"}`}>{p.label}</p>
-                    <p className="text-slate-400 text-xs mt-0.5">{p.desc}</p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <span className={`font-black text-lg ${active ? "text-emerald-600" : "text-slate-500"}`}>${p.price}<span className="text-sm font-medium">/mo</span></span>
-                      <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{p.dims}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+          {/* ── 2-column layout: form left, preview right ── */}
+          <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
 
-            {/* Duration */}
-            <div>
-              <label className="block text-sm font-bold text-[#0a1628] mb-3">Duration</label>
-              <div className="flex flex-wrap gap-2">
-                {AD_DURATIONS.map(d => (
-                  <button key={d} onClick={() => setAdDuration(d)}
-                    className={`px-5 py-2.5 rounded-xl border font-bold text-sm transition-all ${adDuration === d ? "bg-[#0a1628] text-white border-[#0a1628]" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}>
-                    {d} Month{d > 1 ? "s" : ""}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Price summary */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 flex items-center justify-between">
-              <span className="text-slate-600 text-sm">Total ({adDuration} month{adDuration > 1 ? "s" : ""}, {adPlacement === "CENTER_COLUMN" ? "Center Column" : "Left Column"})</span>
-              <span className="text-2xl font-black text-emerald-600">${adPrice}</span>
-            </div>
-          </div>
-
-          {/* Ad details form */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 space-y-5">
-            <h2 className="text-xl font-black text-[#0a1628]">Ad Details</h2>
-
-            <div>
-              <label className="block text-sm font-bold text-[#0a1628] mb-2">Ad Title <span className="text-red-400">*</span></label>
-              <input value={adTitle} onChange={e => setAdTitle(e.target.value)} maxLength={80}
-                placeholder="e.g. TaxComPro Premium Services"
-                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-[#0a1628] mb-2">Short Description <span className="text-slate-400 font-normal">(optional)</span></label>
-              <input value={adDesc} onChange={e => setAdDesc(e.target.value)} maxLength={140}
-                placeholder="One-line tagline shown below your banner"
-                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-[#0a1628] mb-1">
-                Banner Image URL <span className="text-red-400">*</span>
-              </label>
-              <p className="text-xs text-slate-400 mb-2">
-                {adPlacement === "CENTER_COLUMN" ? "Required dimensions: 1200 × 628 px (landscape)" : "Required dimensions: 300 × 600 px (portrait)"}
-              </p>
-              <div className="flex gap-2">
-                <input value={adImageUrl} onChange={e => setAdImageUrl(e.target.value)}
-                  placeholder="https://yoursite.com/banner.jpg"
-                  className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><ImageIcon className="w-4 h-4 text-slate-400" /></div>
-              </div>
-              {adImageUrl && (
-                <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
-                  <img src={adImageUrl} alt="Banner preview" className="w-full max-h-48 object-cover" onError={e => { (e.target as HTMLImageElement).style.display="none"; }} />
+            {/* LEFT: form cards */}
+            <div className="space-y-6">
+              {/* Placement picker */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-5">
+                <div>
+                  <h2 className="text-lg font-black text-[#0a1628] mb-1">Choose Placement</h2>
+                  <p className="text-slate-500 text-sm">Select where your ad will appear on the platform.</p>
                 </div>
-              )}
+                <div className="grid grid-cols-2 gap-3">
+                  {AD_PLACEMENTS.map(p => {
+                    const Icon = p.icon;
+                    const active = adPlacement === p.key;
+                    return (
+                      <button key={p.key} onClick={() => setAdPlacement(p.key as "CENTER_COLUMN"|"LEFT_COLUMN")}
+                        className={`text-left p-4 rounded-2xl border-2 transition-all ${active ? "border-[#0a1628] bg-[#0a1628]/5" : "border-slate-200 hover:border-slate-300"}`}>
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-2.5 ${active ? "bg-[#0a1628]" : "bg-slate-100"}`}>
+                          <Icon className={`w-4 h-4 ${active ? "text-[#f0c040]" : "text-slate-500"}`} />
+                        </div>
+                        <p className={`font-black text-sm ${active ? "text-[#0a1628]" : "text-slate-700"}`}>{p.label}</p>
+                        <p className="text-slate-400 text-[11px] mt-0.5">{p.desc}</p>
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <span className={`font-black text-base ${active ? "text-emerald-600" : "text-slate-500"}`}>${p.price}<span className="text-xs font-medium">/mo</span></span>
+                          <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{p.dims}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Duration */}
+                <div>
+                  <label className="block text-sm font-bold text-[#0a1628] mb-2">Duration</label>
+                  <div className="flex flex-wrap gap-2">
+                    {AD_DURATIONS.map(d => (
+                      <button key={d} onClick={() => setAdDuration(d)}
+                        className={`px-4 py-2 rounded-xl border font-bold text-sm transition-all ${adDuration === d ? "bg-[#0a1628] text-white border-[#0a1628]" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}>
+                        {d} Month{d > 1 ? "s" : ""}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price summary */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 flex items-center justify-between">
+                  <span className="text-slate-600 text-sm">Total ({adDuration} mo, {adPlacement === "CENTER_COLUMN" ? "Center Col." : "Left Col."})</span>
+                  <span className="text-xl font-black text-emerald-600">${adPrice}</span>
+                </div>
+              </div>
+
+              {/* Ad details form */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+                <h2 className="text-lg font-black text-[#0a1628]">Ad Details</h2>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#0a1628] mb-1.5">Ad Title <span className="text-red-400">*</span></label>
+                  <input value={adTitle} onChange={e => setAdTitle(e.target.value)} maxLength={80}
+                    placeholder="e.g. TaxComPro Premium Services"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#0a1628] mb-1.5">Short Description <span className="text-slate-400 font-normal">(optional)</span></label>
+                  <input value={adDesc} onChange={e => setAdDesc(e.target.value)} maxLength={140}
+                    placeholder="One-line tagline shown below your banner"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#0a1628] mb-1">Banner Image URL <span className="text-red-400">*</span></label>
+                  <p className="text-xs text-slate-400 mb-1.5">{adPlacement === "CENTER_COLUMN" ? "1200 × 628 px (landscape)" : "300 × 600 px (portrait)"}</p>
+                  <input value={adImageUrl} onChange={e => setAdImageUrl(e.target.value)}
+                    placeholder="https://yoursite.com/banner.jpg"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#0a1628] mb-1.5"><ExternalLink className="w-3.5 h-3.5 inline mr-1" />Link URL <span className="text-red-400">*</span></label>
+                  <input value={adLinkUrl} onChange={e => setAdLinkUrl(e.target.value)}
+                    placeholder="https://yourwebsite.com"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#0a1628] mb-1.5"><Calendar className="w-3.5 h-3.5 inline mr-1" />Start Date <span className="text-slate-400 font-normal">(optional)</span></label>
+                  <input type="date" value={adStartDate} onChange={e => setAdStartDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
+                </div>
+
+                {adError && <p className="text-red-500 text-sm">{adError}</p>}
+
+                <button onClick={handleAdCheckout} disabled={adSubmitting || !adTitle.trim() || !adImageUrl.trim() || !adLinkUrl.trim()}
+                  className="w-full flex items-center justify-center gap-2 bg-[#0a1628] text-white font-black py-3.5 rounded-2xl hover:bg-[#1a3a6b] disabled:opacity-40 transition-all">
+                  {adSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <DollarSign className="w-5 h-5" />}
+                  Pay ${adPrice} via Stripe
+                </button>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-[#0a1628] mb-2">
-                <ExternalLink className="w-3.5 h-3.5 inline mr-1" />Link URL <span className="text-red-400">*</span>
-              </label>
-              <input value={adLinkUrl} onChange={e => setAdLinkUrl(e.target.value)}
-                placeholder="https://yourwebsite.com"
-                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
+            {/* RIGHT: sticky live preview */}
+            <div className="lg:sticky lg:top-[80px] space-y-4">
+              <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-3">
+                <h3 className="font-black text-[#0a1628] text-sm">Live Preview</h3>
+                <p className="text-[11px] text-slate-400">{adPlacement === "CENTER_COLUMN" ? "Center column — between feed posts" : "Left sidebar panel"}</p>
+
+                {adPlacement === "CENTER_COLUMN" ? (
+                  <div className="bg-slate-50 rounded-2xl p-3 space-y-2">
+                    <div className="bg-white rounded-xl p-2.5 flex gap-2.5 border border-slate-100">
+                      <div className="w-7 h-7 rounded-full bg-slate-200 animate-pulse shrink-0" />
+                      <div className="flex-1 space-y-1.5 pt-0.5">
+                        <div className="h-2 bg-slate-200 rounded animate-pulse w-1/3" />
+                        <div className="h-1.5 bg-slate-100 rounded animate-pulse w-2/3" />
+                      </div>
+                    </div>
+                    <div className="rounded-xl overflow-hidden border-2 border-[#f0c040] shadow relative">
+                      <div className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-[#f0c040] text-[#0a1628] text-[8px] font-black px-1.5 py-0.5 rounded-full"><MonitorPlay className="w-2 h-2" />SPONSORED</div>
+                      {adImageUrl ? (
+                        <img src={adImageUrl} alt="Preview" className="w-full aspect-[16/9] object-cover" onError={e => { (e.target as HTMLImageElement).style.display="none"; }} />
+                      ) : (
+                        <div className="w-full aspect-[16/9] bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col items-center justify-center gap-1.5">
+                          <ImageIcon className="w-6 h-6 text-slate-300" />
+                          <p className="text-[10px] text-slate-400">1200 × 628 px</p>
+                        </div>
+                      )}
+                      <div className="px-3 py-2 bg-white border-t border-slate-100">
+                        <p className="font-bold text-[#0a1628] text-xs">{adTitle || "Your Ad Title"}</p>
+                        {adDesc && <p className="text-[10px] text-slate-500 mt-0.5 truncate">{adDesc}</p>}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl p-2.5 flex gap-2.5 border border-slate-100">
+                      <div className="w-7 h-7 rounded-full bg-slate-200 animate-pulse shrink-0" />
+                      <div className="flex-1 space-y-1.5 pt-0.5">
+                        <div className="h-2 bg-slate-200 rounded animate-pulse w-1/4" />
+                        <div className="h-1.5 bg-slate-100 rounded animate-pulse w-1/2" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 rounded-2xl p-3">
+                    <div className="flex gap-2">
+                      <div className="w-28 shrink-0 space-y-1.5">
+                        {[...Array(6)].map((_, i) => <div key={i} className="h-6 bg-slate-200 rounded-lg animate-pulse" />)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="rounded-xl overflow-hidden border-2 border-[#f0c040] shadow relative">
+                          <div className="absolute top-1 left-1 z-10 flex items-center gap-0.5 bg-[#f0c040] text-[#0a1628] text-[8px] font-black px-1 py-0.5 rounded-full"><Tv className="w-2 h-2" />AD</div>
+                          {adImageUrl ? (
+                            <img src={adImageUrl} alt="Preview" className="w-full aspect-[19/8] object-cover" onError={e => { (e.target as HTMLImageElement).style.display="none"; }} />
+                          ) : (
+                            <div className="w-full aspect-[19/8] bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col items-center justify-center gap-1">
+                              <ImageIcon className="w-5 h-5 text-slate-300" />
+                              <p className="text-[9px] text-slate-400">300 × 600 px</p>
+                            </div>
+                          )}
+                          <div className="px-2 py-1.5 bg-white border-t border-slate-100">
+                            <p className="font-bold text-[#0a1628] text-[10px]">{adTitle || "Your Ad Title"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-bold text-[#0a1628] mb-2">
-                <Calendar className="w-3.5 h-3.5 inline mr-1" />Start Date <span className="text-slate-400 font-normal">(optional — defaults to approval date)</span>
-              </label>
-              <input type="date" value={adStartDate} onChange={e => setAdStartDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className="border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a1628]/20" />
-            </div>
-
-            {adError && <p className="text-red-500 text-sm">{adError}</p>}
-
-            <button onClick={handleAdCheckout} disabled={adSubmitting || !adTitle.trim() || !adImageUrl.trim() || !adLinkUrl.trim()}
-              className="w-full flex items-center justify-center gap-2 bg-[#0a1628] text-white font-black py-4 rounded-2xl hover:bg-[#1a3a6b] disabled:opacity-40 transition-all">
-              {adSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <DollarSign className="w-5 h-5" />}
-              Pay ${adPrice} via Stripe
-            </button>
           </div>
+
+
 
           {/* My Ads history */}
           <div className="bg-white rounded-3xl border border-slate-200 p-8">
@@ -647,6 +741,10 @@ function ProMarketingContent() {
                       <span className={`flex items-center gap-1.5 text-xs font-semibold border px-3 py-1 rounded-full ${s.color}`}>
                         <Icon className="w-3 h-3" />{s.label}
                       </span>
+                      <button onClick={() => handleDeleteAd(ad.id)} disabled={deletingAdId === ad.id}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all disabled:opacity-40">
+                        {deletingAdId === ad.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
                     </div>
                   );
                 })}
@@ -770,6 +868,10 @@ function ProMarketingContent() {
                       <span className={`flex items-center gap-1.5 text-xs font-semibold border px-3 py-1 rounded-full ${s.color}`}>
                         <Icon className="w-3 h-3" />{s.label}
                       </span>
+                      <button onClick={() => handleDeleteFeat(fr.id)} disabled={deletingFeatId === fr.id}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all disabled:opacity-40">
+                        {deletingFeatId === fr.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
                     </div>
                   );
                 })}

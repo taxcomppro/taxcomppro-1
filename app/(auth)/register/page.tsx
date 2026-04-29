@@ -64,7 +64,7 @@ export default function RegisterPage() {
           <div className="bg-[#d4a017]/15 border border-[#d4a017]/35 rounded-xl p-5">
             <div className="text-[#f0c040] font-bold text-base mb-1">🛡️ Free Membership Includes:</div>
             <ul className="space-y-1.5 mt-3">
-              {["Marketplace access (view)","Pro Hub community access","Member directory","Secure members-only environment"].map((f) => (
+              {["Marketplace access (view)","Communities access","Member directory","Secure members-only environment"].map((f) => (
                 <li key={f} className="text-white/60 text-sm flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#f0c040] shrink-0" />{f}
                 </li>

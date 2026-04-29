@@ -1,391 +1,322 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
-import { Loader2 } from "lucide-react";
 import {
-  Search01Icon, UserGroupIcon, Message01Icon, Tick02Icon,
-  Add01Icon, Cancel01Icon, LockIcon, GlobeIcon, ArrowRight01Icon,
-  UserCircleIcon,
-} from "hugeicons-react";
+  MessageSquare, Users, Plus, Loader2, Lock, Pin,
+  Pencil, Trash2, X, Check,
+} from "lucide-react";
 
-interface Community {
-  id: string; name: string; slug: string; description: string;
-  icon: string | null; isPublic: boolean; memberCount: number;
-  isMember: boolean;
-  creator: { id: string; name: string; image: string | null };
-  _count: { members: number; posts: number };
+interface Forum {
+  id: string; name: string; slug: string; description: string | null;
+  image: string | null; isAdminOnly: boolean; isPinned: boolean; badge: string | null;
+  createdBy: { name: string; image: string | null };
+  _count: { posts: number };
+  posts: { createdAt: string }[];
 }
 
-const PALETTE = [
-  "from-blue-600 to-indigo-700", "from-emerald-500 to-teal-700",
-  "from-amber-500 to-orange-600", "from-purple-600 to-violet-700",
-  "from-rose-500 to-pink-700",   "from-cyan-500 to-blue-600",
-  "from-green-500 to-emerald-700","from-[#1a3a6b] to-[#0a1628]",
-];
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return `${Math.floor(d / 30)}mo ago`;
+}
 
-/* ─── Create Community Modal ───────────────────────────────── */
-function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (c: Community) => void }) {
-  const [name, setName]         = useState("");
-  const [desc, setDesc]         = useState("");
-  const [icon, setIcon]         = useState("");
-  const [isPublic, setIsPublic] = useState(true);
-  const [saving, setSaving]     = useState(false);
-  const [error, setError]       = useState("");
+/* ─── Create/Edit Forum Modal (Admin) ─── */
+function ForumModal({ initial, onSave, onClose }: {
+  initial?: Forum | null;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [name,        setName]        = useState(initial?.name ?? "");
+  const [slug,        setSlug]        = useState(initial?.slug ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [image,       setImage]       = useState(initial?.image ?? "");
+  const [badge,       setBadge]       = useState(initial?.badge ?? "");
+  const [isAdminOnly, setIsAdminOnly] = useState(initial?.isAdminOnly ?? false);
+  const [isPinned,    setIsPinned]    = useState(initial?.isPinned ?? false);
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(""); setSaving(true);
+  const autoSlug = (n: string) => n.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
+  const handleNameChange = (v: string) => {
+    setName(v);
+    if (!initial) setSlug(autoSlug(v));
+  };
+
+  const handleSave = async () => {
+    if (!name.trim() || !slug.trim()) { setError("Name and slug are required"); return; }
+    setSaving(true);
+    setError("");
     try {
-      const res = await fetch("/api/pro-hub", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description: desc, icon: icon || null, isPublic }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Failed"); return; }
-      onCreated(data);
+      await onSave({ name, slug, description, image, badge, isAdminOnly, isPinned });
       onClose();
-    } catch { setError("Something went wrong."); }
-    finally { setSaving(false); }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to save");
+    } finally { setSaving(false); }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md">
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <h2 className="font-black text-[#0a1628] text-lg">Create Community</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition-all">
-            <Cancel01Icon className="w-4 h-4 text-slate-400" />
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h2 className="font-black text-[#0a1628] text-lg">{initial ? "Edit Forum" : "Create Forum"}</h2>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
+            <X className="w-4 h-4 text-slate-500" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {error && <div className="bg-red-50 text-red-600 rounded-xl px-4 py-3 text-sm">{error}</div>}
 
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Community Name *</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} required
-              placeholder="e.g. IRS Audit Defense Network"
-              className="w-full font-[inherit] text-sm px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] focus:ring-2 focus:ring-[#0a1628]/10 transition-all" />
+        <div className="p-6 space-y-4">
+          {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-2.5 rounded-xl">{error}</div>}
+
+          {/* Image preview */}
+          {image && (
+            <div className="h-28 rounded-xl overflow-hidden bg-slate-100">
+              <img src={image} alt="" className="w-full h-full object-cover" />
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="block text-xs font-bold text-slate-600 mb-1">Forum Name *</label>
+              <input value={name} onChange={e => handleNameChange(e.target.value)} placeholder="e.g. IRS Audits & Due Diligence"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#0a1628]" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-bold text-slate-600 mb-1">Slug *</label>
+              <input value={slug} onChange={e => setSlug(e.target.value)} placeholder="irs-audits"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#0a1628]" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-bold text-slate-600 mb-1">Description</label>
+              <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
+                placeholder="What is this forum about?"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-[#0a1628]" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-bold text-slate-600 mb-1">Cover Image URL</label>
+              <input value={image} onChange={e => setImage(e.target.value)} placeholder="https://..."
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#0a1628]" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">Badge Label</label>
+              <input value={badge} onChange={e => setBadge(e.target.value)} placeholder="e.g. MARKETPLACE"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#0a1628]" />
+            </div>
+            <div className="flex flex-col gap-2 justify-end">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer">
+                <input type="checkbox" checked={isAdminOnly} onChange={e => setIsAdminOnly(e.target.checked)} className="rounded" />
+                Admin posts only
+              </label>
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer">
+                <input type="checkbox" checked={isPinned} onChange={e => setIsPinned(e.target.checked)} className="rounded" />
+                Pin to top
+              </label>
+            </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Description *</label>
-            <textarea value={desc} onChange={e => setDesc(e.target.value)} required rows={3}
-              placeholder="What is this community about?"
-              className="w-full font-[inherit] text-sm px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] focus:ring-2 focus:ring-[#0a1628]/10 transition-all resize-none" />
-          </div>
-
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Icon (emoji or URL)</label>
-            <input type="text" value={icon} onChange={e => setIcon(e.target.value)}
-              placeholder="e.g. ⚖️ or https://…"
-              className="w-full font-[inherit] text-sm px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] focus:ring-2 focus:ring-[#0a1628]/10 transition-all" />
-          </div>
-
-          <div className="flex gap-3">
-            <button type="button" onClick={() => setIsPublic(true)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${isPublic ? "border-[#0a1628] bg-[#0a1628]/5 text-[#0a1628]" : "border-slate-200 text-slate-500"}`}>
-              <GlobeIcon className="w-4 h-4" /> Public
-            </button>
-            <button type="button" onClick={() => setIsPublic(false)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${!isPublic ? "border-[#0a1628] bg-[#0a1628]/5 text-[#0a1628]" : "border-slate-200 text-slate-500"}`}>
-              <LockIcon className="w-4 h-4" /> Private
-            </button>
-          </div>
-
-          <button type="submit" disabled={saving || !name || !desc}
-            className="w-full bg-[#0a1628] text-white font-black text-sm py-3.5 rounded-xl hover:bg-[#1a3a6b] transition-all disabled:opacity-60 flex items-center justify-center gap-2">
-            {saving ? <><Loader2 className="w-4 h-4 animate-spin" />Creating…</> : "Create Community"}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100">
+          <button onClick={onClose} className="text-sm font-semibold text-slate-500 px-4 py-2 rounded-xl hover:bg-slate-50 transition-all">
+            Cancel
           </button>
-        </form>
+          <button onClick={handleSave} disabled={saving}
+            className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all disabled:opacity-60">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {saving ? "Saving…" : initial ? "Save Changes" : "Create Forum"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ─── Skeleton card ─────────────────────────────────────────── */
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-2xl overflow-hidden animate-pulse">
-      <div className="h-24 bg-slate-200" />
-      <div className="pt-10 px-4 pb-4 space-y-3">
-        <div className="h-4 bg-slate-200 rounded w-2/3" />
-        <div className="h-3 bg-slate-200 rounded w-1/3" />
-        <div className="h-3 bg-slate-200 rounded w-full" />
-        <div className="h-3 bg-slate-200 rounded w-4/5" />
-        <div className="flex justify-between items-center pt-1">
-          <div className="h-3 w-16 bg-slate-200 rounded" />
-          <div className="h-8 w-20 bg-slate-200 rounded-full" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Community card ────────────────────────────────────────── */
-function CommunityCard({ c, idx, onJoin, joining, joined }: {
-  c: Community; idx: number;
-  onJoin: (id: string) => void; joining: boolean; joined: boolean;
+/* ─── Forum Card ─── */
+function ForumCard({ f, isAdmin, onEdit, onDelete }: {
+  f: Forum; isAdmin: boolean;
+  onEdit: (f: Forum) => void;
+  onDelete: (id: string) => void;
 }) {
-  const gradient = PALETTE[idx % PALETTE.length];
-  const isEmoji  = c.icon && c.icon.length <= 4;
+  const lastActivity = f.posts[0]?.createdAt;
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden hover:-translate-y-0.5 transition-all group">
-      {/* Banner */}
-      <div className={`bg-gradient-to-br ${gradient} h-24 relative`}>
-        <div className="w-14 h-14 rounded-2xl border-4 border-white bg-white shadow-md flex items-center justify-center absolute -bottom-7 left-4 overflow-hidden">
-          {isEmoji
-            ? <span className="text-2xl">{c.icon}</span>
-            : c.icon
-              ? <img src={c.icon} alt={c.name} className="w-full h-full object-cover" />
-              : <span className="text-[#0a1628] font-black text-2xl">{c.name[0]}</span>}
+    <div className="group relative bg-white rounded-2xl overflow-hidden border border-slate-100 hover:border-slate-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-300">
+      {/* Admin actions */}
+      {isAdmin && (
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={e => { e.preventDefault(); onEdit(f); }}
+            className="p-1.5 bg-white/90 rounded-lg hover:bg-white shadow-sm">
+            <Pencil className="w-3 h-3 text-slate-500" />
+          </button>
+          <button onClick={e => { e.preventDefault(); onDelete(f.id); }}
+            className="p-1.5 bg-white/90 rounded-lg hover:bg-red-50 shadow-sm">
+            <Trash2 className="w-3 h-3 text-red-400" />
+          </button>
         </div>
-        {!c.isPublic && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/30 text-white text-[10px] font-bold px-2 py-1 rounded-full">
-            <LockIcon className="w-2.5 h-2.5" /> Private
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* Content */}
-      <div className="pt-10 px-4 pb-4">
-        <h3 className="font-black text-[#0a1628] text-base leading-snug group-hover:text-[#1a3a6b] transition-colors">{c.name}</h3>
-        <p className="text-[11px] text-slate-400 mt-0.5 mb-2">by {c.creator.name}</p>
-        <p className="text-slate-500 text-sm leading-relaxed line-clamp-2 mb-4">{c.description}</p>
+      <Link href={`/pro-hub/${f.slug}`} className="block">
+        {/* Cover */}
+        <div className="h-36 bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] relative overflow-hidden">
+          {f.image && <img src={f.image} alt={f.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span className="flex items-center gap-1 font-medium">
-              <UserGroupIcon className="w-3.5 h-3.5" />{c.memberCount.toLocaleString()}
-            </span>
-            <span className="flex items-center gap-1">
-              <Message01Icon className="w-3.5 h-3.5" />{c._count.posts}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {joined ? (
-              <Link href={`/pro-hub/${c.slug}`}
-                className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full hover:bg-emerald-100 transition-all">
-                <Tick02Icon className="w-3.5 h-3.5" /> Enter
-              </Link>
-            ) : (
-              <button onClick={() => onJoin(c.id)} disabled={joining}
-                className="text-xs font-bold bg-[#0a1628] text-white px-4 py-2 rounded-full hover:bg-[#1a3a6b] transition-all disabled:opacity-50">
-                {joining ? "Joining…" : "Join"}
-              </button>
+          {/* Badges */}
+          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
+            {f.isPinned && (
+              <span className="flex items-center gap-0.5 text-[9px] font-black bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full">
+                <Pin className="w-2.5 h-2.5" /> Pinned
+              </span>
             )}
-            <Link href={`/pro-hub/${c.slug}`}
-              className="text-slate-400 hover:text-[#0a1628] transition-colors">
-              <ArrowRight01Icon className="w-4 h-4" />
-            </Link>
+            {f.badge && (
+              <span className="text-[9px] font-black bg-[#0a1628] text-[#d4a017] px-2 py-0.5 rounded-full">{f.badge}</span>
+            )}
+            {f.isAdminOnly && (
+              <span className="flex items-center gap-0.5 text-[9px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full">
+                <Lock className="w-2.5 h-2.5" /> Admin Only
+              </span>
+            )}
           </div>
         </div>
-      </div>
+
+        {/* Content */}
+        <div className="p-4">
+          <h3 className="font-black text-[#0a1628] text-sm leading-snug group-hover:text-[#1a3a6b] transition-colors mb-1">{f.name}</h3>
+          <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2 mb-3">{f.description}</p>
+          <div className="flex items-center justify-between text-[11px] text-slate-400">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{f._count.posts} discussions</span>
+            </div>
+            {lastActivity
+              ? <span>{timeAgo(lastActivity)}</span>
+              : <span className="text-slate-300">No Discussions</span>}
+          </div>
+        </div>
+      </Link>
     </div>
   );
 }
 
-/* ─── Main page ─────────────────────────────────────────────── */
+/* ─── Page ─── */
 export default function ProHubPage() {
   const user    = useAppSelector(s => s.auth.user);
   const isAdmin = user?.role === "ADMIN";
 
-  const [communities, setCommunities] = useState<Community[]>([]);
+  const [forums,      setForums]      = useState<Forum[]>([]);
   const [loading,     setLoading]     = useState(true);
-  const [search,      setSearch]      = useState("");
-  const [query,       setQuery]       = useState("");
-  const [joining,     setJoining]     = useState<Record<string, boolean>>({});
-  const [joined,      setJoined]      = useState<Record<string, boolean>>({});
   const [showCreate,  setShowCreate]  = useState(false);
+  const [editForum,   setEditForum]   = useState<Forum | null>(null);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    const p = new URLSearchParams();
-    if (query) p.set("search", query);
+  const load = useCallback(() => {
     setLoading(true);
-    fetch(`/api/pro-hub?${p}`)
-      .then(r => r.json())
-      .then(d => {
-        const list = Array.isArray(d) ? d : [];
-        setCommunities(list);
-        const serverJoined: Record<string, boolean> = {};
-        list.forEach((c: Community) => { if (c.isMember) serverJoined[c.id] = true; });
-        setJoined(prev => ({ ...serverJoined, ...prev }));
-      })
-      .catch(() => setCommunities([]))
+    fetch("/api/pro-hub").then(r => r.json()).then(d => setForums(Array.isArray(d) ? d : []))
       .finally(() => setLoading(false));
-  }, [query]);
+  }, []);
 
-  useEffect(() => {
-    const t = setTimeout(() => setQuery(search), 400);
-    return () => clearTimeout(t);
-  }, [search]);
+  useEffect(() => { load(); }, [load]);
 
-  const handleJoin = async (id: string) => {
-    if (!user) { window.location.href = "/login?redirect=/pro-hub"; return; }
-    setJoining(p => ({ ...p, [id]: true }));
-    try {
-      const res = await fetch("/api/pro-hub/join", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ communityId: id }),
-      });
-      if (res.ok || res.status === 409) {
-        setJoined(p => ({ ...p, [id]: true }));
-        if (res.ok) setCommunities(prev => prev.map(c => c.id === id ? { ...c, memberCount: c.memberCount + 1 } : c));
-      }
-    } catch { /* ignore */ } finally { setJoining(p => ({ ...p, [id]: false })); }
+  const handleCreate = async (data: Record<string, unknown>) => {
+    const res = await fetch("/api/pro-hub", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? "Failed"); }
+    load();
   };
 
-  const joinedCount = Object.values(joined).filter(Boolean).length;
+  const handleEdit = async (data: Record<string, unknown>) => {
+    const res = await fetch(`/api/pro-hub/${editForum!.slug}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? "Failed"); }
+    load();
+  };
+
+  const handleDelete = async (id: string) => {
+    const forum = forums.find(f => f.id === id);
+    if (!forum || !confirm(`Delete "${forum.name}"? All discussions will be lost.`)) return;
+    await fetch(`/api/pro-hub/${forum.slug}`, { method: "DELETE" });
+    setForums(prev => prev.filter(f => f.id !== id));
+  };
 
   return (
-    <div className="min-h-screen bg-slate-100 pt-4 pb-12">
-      {showCreate && isAdmin && (
-        <CreateModal
-          onClose={() => setShowCreate(false)}
-          onCreated={c => setCommunities(prev => [{
-            ...c as unknown as Community,
-            creator:  { id: user?.id ?? "", name: user?.name ?? "Admin", image: user?.image ?? null },
-            _count:   { members: 1, posts: 0 },
-            isMember: true,
-          }, ...prev])}
-        />
-      )}
-
-      <div className="max-w-[1200px] mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 items-start">
-
-          {/* ── Fixed sidebar ──────────────────────────── */}
-          <div className="hidden lg:block self-start sticky top-[100px] h-fit max-h-[calc(100vh-100px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] space-y-2.5">
-
-            {/* Profile mini-card */}
-            {user && (
-              <div className="bg-white rounded-2xl overflow-hidden">
-                <div className="h-20 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50] relative">
-                  <div className="absolute inset-0 opacity-10"
-                    style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-                  <div className="absolute -bottom-9 left-4">
-                    <div className="w-[72px] h-[72px] rounded-full bg-[#0a1628] border-[3px] border-white overflow-hidden flex items-center justify-center shadow-md">
-                      {user.image
-                        ? <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                        : <span className="text-white font-black text-2xl">{user.name?.[0]?.toUpperCase()}</span>}
-                    </div>
-                  </div>
-                </div>
-                <div className="px-4 pt-12 pb-4">
-                  <div className="font-black text-[#0a1628] text-sm">{user.name}</div>
-                  {user.headline
-                    ? <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">{user.headline}</div>
-                    : <div className="text-xs text-slate-400 italic mt-0.5">No headline</div>}
-                  {/* Joined communities count */}
-                  <div className="mt-3 flex gap-2">
-                    <div className="flex-1 bg-slate-50 rounded-xl py-2 text-center">
-                      <div className="text-[10px] text-slate-400">Joined</div>
-                      <div className="text-sm font-black text-[#0a1628]">{joinedCount}</div>
-                    </div>
-                    <div className="flex-1 bg-slate-50 rounded-xl py-2 text-center">
-                      <div className="text-[10px] text-slate-400">Total</div>
-                      <div className="text-sm font-black text-[#0a1628]">{communities.length}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Create community CTA */}
-            {isAdmin ? (
-              <button onClick={() => setShowCreate(true)}
-                className="flex items-center justify-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-4 py-3 rounded-xl hover:bg-[#1a3a6b] transition-all w-full">
-                <Add01Icon className="w-4 h-4" /> Create Community
-              </button>
-            ) : !user ? (
-              <Link href="/login"
-                className="flex items-center justify-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-4 py-3 rounded-xl hover:bg-[#1a3a6b] transition-all w-full">
-                <UserCircleIcon className="w-4 h-4" /> Sign In to Join
-              </Link>
-            ) : null}
-
-            {/* About + stats */}
-            <div className="bg-white rounded-2xl p-4 space-y-3">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">About Pro Hub</p>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Professional communities for tax experts. Join groups, discuss strategies, and grow your network.
-              </p>
-              {[
-                { label: "Communities", value: communities.length },
-                { label: "Members",     value: communities.reduce((a, c) => a + (c.memberCount ?? 0), 0).toLocaleString() },
-                { label: "Discussions", value: communities.reduce((a, c) => a + (c._count?.posts ?? 0), 0).toLocaleString() },
-              ].map(s => (
-                <div key={s.label} className="flex items-center justify-between text-sm border-t border-slate-50 pt-2">
-                  <span className="text-slate-400 text-xs">{s.label}</span>
-                  <span className="font-black text-[#0a1628] text-sm">{s.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Main content ──────────────────────────── */}
-          <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-black text-[#0a1628]">Pro Hub</h1>
-                <p className="text-slate-500 text-sm mt-0.5">
-                  {loading ? "Loading…" : `${communities.length} active communit${communities.length !== 1 ? "ies" : "y"}`}
-                </p>
-              </div>
-              {isAdmin && (
-                <button onClick={() => setShowCreate(true)}
-                  className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all shrink-0 lg:hidden">
-                  <Add01Icon className="w-4 h-4" /> Create
-                </button>
-              )}
-            </div>
-
-            {/* Search */}
-            <div className="bg-white rounded-xl px-4 py-3 flex items-center gap-3">
-              <Search01Icon className="w-4 h-4 text-slate-400 shrink-0" />
-              <input type="text" placeholder="Search communities…"
-                value={search} onChange={e => setSearch(e.target.value)}
-                className="flex-1 bg-transparent font-[inherit] text-sm text-slate-700 outline-none placeholder-slate-400" />
-              {search && (
-                <button onClick={() => { setSearch(""); setQuery(""); }}
-                  className="text-slate-400 hover:text-slate-600 text-xs font-semibold">Clear</button>
-              )}
-            </div>
-
-            {/* Grid / Skeleton / Empty */}
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[1,2,3,4].map(i => <SkeletonCard key={i} />)}
-              </div>
-            ) : communities.length === 0 ? (
-              <div className="bg-white rounded-2xl py-24 text-center">
-                <UserGroupIcon className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                <p className="font-bold text-slate-400 text-lg">No communities yet</p>
-                <p className="text-slate-400 text-sm mt-1">
-                  {query ? "Try a different search" : isAdmin ? "Create the first community!" : "Check back soon"}
-                </p>
-                {isAdmin && (
-                  <button onClick={() => setShowCreate(true)}
-                    className="inline-flex items-center gap-2 mt-5 bg-[#0a1628] text-white font-bold text-sm px-6 py-3 rounded-xl hover:bg-[#1a3a6b] transition-all">
-                    <Add01Icon className="w-4 h-4" /> Create First Community
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {communities.map((c, i) => (
-                  <CommunityCard key={c.id} c={c} idx={i}
-                    onJoin={handleJoin} joining={!!joining[c.id]} joined={!!joined[c.id]} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#f4f6fb]">
+      {/* Hero */}
+      <div className="bg-[#0a1628] py-10 px-4 text-center">
+        <p className="text-[#d4a017] text-sm font-bold tracking-widest uppercase mb-2">Tax Pro Community</p>
+        <h1 className="text-3xl font-black text-white mb-2">Pro Hub</h1>
+        <p className="text-slate-400 text-sm max-w-md mx-auto">
+          <span className="text-[#d4a017] font-bold">Ask. Learn. Grow.</span> — Where Tax Professionals Connect &amp; Learn.
+        </p>
       </div>
+
+      {/* Content */}
+      <div className="max-w-[1100px] mx-auto px-4 py-8">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="font-black text-[#0a1628] text-xl">Discussion Forums</h2>
+            <p className="text-slate-400 text-sm mt-0.5">
+              {loading ? "Loading…" : `${forums.length} forum${forums.length !== 1 ? "s" : ""}`}
+            </p>
+          </div>
+          {isAdmin && (
+            <button onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all">
+              <Plus className="w-4 h-4" /> Create Forum
+            </button>
+          )}
+        </div>
+
+        {/* Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse">
+                <div className="h-36 bg-slate-200" />
+                <div className="p-4 space-y-2">
+                  <div className="h-4 bg-slate-200 rounded w-3/4" />
+                  <div className="h-3 bg-slate-200 rounded w-full" />
+                  <div className="h-3 bg-slate-200 rounded w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : forums.length === 0 ? (
+          <div className="py-20 text-center">
+            <MessageSquare className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+            <p className="font-bold text-slate-400">No forums yet</p>
+            {isAdmin && (
+              <button onClick={() => setShowCreate(true)}
+                className="inline-flex items-center gap-2 mt-4 bg-[#0a1628] text-white font-bold text-sm px-6 py-3 rounded-xl hover:bg-[#1a3a6b] transition-all">
+                <Plus className="w-4 h-4" /> Create First Forum
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {forums.map(f => (
+              <ForumCard key={f.id} f={f} isAdmin={isAdmin}
+                onEdit={f => setEditForum(f)}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {showCreate && (
+        <ForumModal onSave={handleCreate} onClose={() => setShowCreate(false)} />
+      )}
+      {editForum && (
+        <ForumModal initial={editForum} onSave={handleEdit} onClose={() => setEditForum(null)} />
+      )}
     </div>
   );
 }

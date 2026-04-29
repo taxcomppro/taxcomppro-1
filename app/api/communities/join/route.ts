@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// POST /api/pro-hub/join  — join a community
+// POST /api/communities/join  — join a community
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(member, { status: 201 });
 }
 
-// DELETE /api/pro-hub/join  — leave a community
+// DELETE /api/communities/join  — leave a community
 export async function DELETE(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

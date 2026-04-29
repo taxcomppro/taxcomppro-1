@@ -34,7 +34,8 @@ const navItems: NavItem[] = [
     type: "dropdown", label: "Pros", icon: UserGroupIcon,
     items: [
       { label: "Pro Marketplace", href: "/pros",          icon: UserGroupIcon, desc: "" },
-      { label: "Pro Hub",         href: "/pro-hub",       icon: Rocket01Icon,  desc: "" },
+      { label: "Communities",     href: "/communities",   icon: Rocket01Icon,  desc: "" },
+      { label: "Pro Hub",         href: "/pro-hub",       icon: UserGroupIcon, desc: "" },
       { label: "Pro Marketing",   href: "/pro-marketing", icon: Megaphone,     desc: "" },
     ],
   },
@@ -135,7 +136,25 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <>
+      <style>{`
+        @keyframes atlas-shine {
+          0%   { background-position: 0% 50%; }
+          50%  { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes atlas-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.4), 0 0 0 0 rgba(59,130,246,0.3); }
+          50%       { box-shadow: 0 0 0 6px rgba(139,92,246,0), 0 0 16px 4px rgba(59,130,246,0.2); }
+        }
+        .atlas-btn {
+          background: linear-gradient(270deg,#d4a017,#f0c040,#f59e0b,#d4a017);
+          background-size: 300% 300%;
+          animation: atlas-shine 4s ease infinite, atlas-pulse 2.5s ease-in-out infinite;
+        }
+        .atlas-btn:hover { animation: atlas-shine 1.5s ease infinite; }
+      `}</style>
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-6 h-[80px] flex items-center gap-4">
 
         {/* Logo */}
@@ -213,6 +232,17 @@ export default function Navbar() {
                 );
               })}
             </nav>
+
+            {/* Atlas AI promo pill — in nav, after Pros */}
+            <a
+              href="https://atlas-ai-iota.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="atlas-btn hidden md:flex items-center gap-2 text-white text-xs px-4 py-2 rounded-full transition-all hover:scale-105 active:scale-95 shrink-0 ml-2"
+            >
+              <img src="/icon.png" alt="Atlas AI" className="w-5 h-5 rounded-sm object-contain" />
+              <span>Try Atlas AI</span>
+            </a>
 
             {/* Desktop right */}
             <div className="hidden md:flex items-center gap-1 ml-auto">
@@ -293,6 +323,12 @@ export default function Navbar() {
                             className="flex items-center gap-2.5 text-sm font-medium text-slate-600 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all">
                             <Store01Icon className="w-4 h-4 text-slate-400" /> My Listings
                           </Link>
+                          {(storeUser?.tier === "MARKETPLACE" || storeUser?.tier === "MARKETPLACE_PLUS") && (
+                            <Link href="/seller-dashboard" onClick={() => setDropdownOpen(false)}
+                              className="flex items-center gap-2.5 text-sm font-medium text-slate-600 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all">
+                              <Rocket01Icon className="w-4 h-4 text-[#d4a017]" /> Seller Dashboard
+                            </Link>
+                          )}
                           <Link href="/my-courses" onClick={() => setDropdownOpen(false)}
                             className="flex items-center gap-2.5 text-sm font-medium text-slate-600 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all">
                             <BookOpen01Icon className="w-4 h-4 text-slate-400" /> My Courses
@@ -439,5 +475,6 @@ export default function Navbar() {
         </div>
       )}
     </header>
+    </>
   );
 }

@@ -50,8 +50,8 @@ export default function LoginPage() {
             <Scale className="w-7 h-7 text-[#f0c040]" />TaxCom<span className="text-[#f0c040]">Pro</span>
           </Link>
           <h1 className="text-4xl font-black text-white mb-4 leading-tight">Welcome Back to the Community</h1>
-          <p className="text-white/60 text-base leading-relaxed mb-10">Access your dashboard, marketplace listings, and Pro Hub communities.</p>
-          {[["Marketplace access & listings"],["Pro Hub communities"],["ATLAS AI Tax Bot"],["Private messaging & networking"]].map(([f]) => (
+          <p className="text-white/60 text-base leading-relaxed mb-10">Access your dashboard, marketplace listings, and Communities.</p>
+          {[["Marketplace access & listings"],["Communities"],["ATLAS AI Tax Bot"],["Private messaging & networking"]].map(([f]) => (
             <div key={f} className="flex items-center gap-3 bg-white/8 border border-white/10 rounded-xl px-4 py-3 mb-2.5">
               <div className="w-2 h-2 rounded-full bg-[#f0c040] shrink-0" />
               <span className="text-white/75 text-sm font-medium">{f}</span>

@@ -307,10 +307,16 @@ function MarketplaceSidebar({
       </div>
 
       {canSell && (
-        <Link href="/my-listings"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white hover:text-[#0a1628] transition-all">
-          <ShoppingBag01Icon className="w-4 h-4 text-slate-400" /> My Listings
-        </Link>
+        <div className="space-y-0.5">
+          <Link href="/my-listings"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white hover:text-[#0a1628] transition-all">
+            <ShoppingBag01Icon className="w-4 h-4 text-slate-400" /> My Listings
+          </Link>
+          <Link href="/seller-dashboard"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white hover:text-[#0a1628] transition-all">
+            <Rocket01Icon className="w-4 h-4 text-slate-400" /> Seller Dashboard
+          </Link>
+        </div>
       )}
     </div>
   );

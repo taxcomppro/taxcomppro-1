@@ -11,7 +11,7 @@ import {
 
 const navLinks = [
   { label: "Marketplace", href: "/marketplace" },
-  { label: "Pro Hub",     href: "/pro-hub" },
+  { label: "Communities", href: "/communities" },
   { label: "Pricing",     href: "#pricing" },
   { label: "About",       href: "#about" },
 ];
@@ -19,7 +19,7 @@ const navLinks = [
 const features = [
   { icon: Users,        title: "Professional Network",    desc: "Connect with CPAs, enrolled agents, and tax attorneys nationwide." },
   { icon: ShoppingBag,  title: "Marketplace",             desc: "Buy and sell tax services, products, trainings, and professional networks." },
-  { icon: GraduationCap,title: "Pro Hub Communities",     desc: "Join or create communities around your niche — like Skool for tax pros." },
+  { icon: GraduationCap,title: "Communities",     desc: "Join or create communities around your niche — like Skool for tax pros." },
   { icon: Shield,       title: "ATLAS AI Tax Bot",        desc: "AI-powered assistant for real-time tax guidance and IRS compliance." },
   { icon: Mic,          title: "Live Sessions",           desc: "Host and attend live audio/video sessions with verified professionals." },
   { icon: Lock,         title: "Members-Only Access",     desc: "Secure, verified community with gated content and private forums." },
@@ -29,13 +29,13 @@ const plans = [
   {
     name: "Basic Members Only", price: "FREE", period: "", icon: Shield,
     highlight: false, badge: null, savings: null,
-    features: ["Email Support","Marketplace Access (View)","Member Directory Access","Pro Hub Access (View)","Marketplace Feed Access","Secure Members-Only Environment"],
+    features: ["Email Support","Marketplace Access (View)","Member Directory Access","Communities Access (View)","Marketplace Feed Access","Secure Members-Only Environment"],
     cta: "Join For Free", href: "/register",
   },
   {
     name: "VIP Members Only", price: "$39.99", period: "/month", icon: Star,
     highlight: false, badge: "2 Months FREE", savings: null,
-    features: ["Priority Email Support","Private Messaging & DMs","Training & Educational Support","Marketplace Feed Interaction","Pro Hub Interaction","Private Discussion Forums","Ongoing Education & Training","Ability to Connect","Pro Training Access","ATLAS AI Tax Bot","Professional Networking"],
+    features: ["Priority Email Support","Private Messaging & DMs","Training & Educational Support","Marketplace Feed Interaction","Communities Interaction","Private Discussion Forums","Ongoing Education & Training","Ability to Connect","Pro Training Access","ATLAS AI Tax Bot","Professional Networking"],
     cta: "Join Now", href: "/register?plan=VIP",
   },
   {
@@ -192,7 +192,7 @@ export default function LandingPage() {
           <div className="hidden lg:flex flex-col gap-4 shrink-0">
             {[
               { icon: ShoppingBag, title: "Tax Services Marketplace", sub: "Browse 800+ verified listings", delay: "0s" },
-              { icon: Users,       title: "Pro Hub Community",         sub: "Join 200+ active groups",      delay: "0.4s" },
+              { icon: Users,       title: "Community Hub",               sub: "Join 200+ active groups",      delay: "0.4s" },
               { icon: Shield,      title: "ATLAS AI Assistant",        sub: "Real-time tax guidance",       delay: "0.8s" },
             ].map((c) => (
               <div key={c.title} className="flex items-center gap-3 bg-white/8 backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 min-w-[240px] animate-float" style={{ animationDelay: c.delay }}>
@@ -270,7 +270,7 @@ export default function LandingPage() {
       <section className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row-reverse items-center gap-16">
           <div className="flex-1">
-            <p className="text-xs font-bold uppercase tracking-widest text-[#d4a017] mb-3">Pro Hub</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-[#d4a017] mb-3">Communities</p>
             <h2 className="text-4xl font-black text-[#0a1628] mb-4">Your Community.<br />Your Rules.</h2>
             <p className="text-slate-500 text-base leading-relaxed mb-6">Create or join niche communities for tax professionals. Share knowledge, host live sessions, run discussion forums.</p>
             <ul className="space-y-2.5 mb-8">
@@ -280,8 +280,8 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <Link href="/pro-hub" className="inline-flex items-center gap-2 bg-[#0a1628] text-white font-bold px-6 py-3 rounded-full hover:bg-[#1a3a6b] transition-all text-sm">
-              Explore Pro Hub <ArrowRight className="w-4 h-4" />
+            <Link href="/communities" className="inline-flex items-center gap-2 bg-[#0a1628] text-white font-bold px-6 py-3 rounded-full hover:bg-[#1a3a6b] transition-all text-sm">
+              Explore Communities <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           <div className="flex-1 flex flex-col gap-3">
@@ -365,7 +365,7 @@ export default function LandingPage() {
               <p className="text-white/45 text-sm leading-relaxed">The professional community for tax experts and taxpayers across America.</p>
             </div>
             {[
-              { title: "Platform", links: [["Marketplace","/marketplace"],["Pro Hub","/pro-hub"],["Pricing","#pricing"],["Dashboard","/dashboard"]] },
+              { title: "Platform", links: [["Marketplace","/marketplace"],["Communities","/communities"],["Pricing","#pricing"],["Dashboard","/dashboard"]] },
               { title: "Company",  links: [["About Us","#"],["Contact","#"],["Blog","#"],["Careers","#"]] },
               { title: "Legal",    links: [["Terms of Service","#"],["Privacy Policy","#"],["Community Guidelines","#"],["Cookie Policy","#"]] },
             ].map((col) => (

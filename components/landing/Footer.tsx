@@ -13,7 +13,7 @@ export default function PublicFooter() {
             <p className="text-white/45 text-sm leading-relaxed">The professional community for tax experts and taxpayers across America.</p>
           </div>
           {[
-            { title: "Platform",  links: [["Marketplace","/marketplace"],["Pro Hub","/pro-hub"],["Pricing","/#pricing"],["Dashboard","/dashboard"]] },
+            { title: "Platform",  links: [["Marketplace","/marketplace"],["Communities","/communities"],["Pricing","/#pricing"],["Dashboard","/dashboard"]] },
             { title: "Company",   links: [["About Us","/about"],["Contact","/contact"],["Affiliate Program","/affiliate"],["Security","/security"]] },
             { title: "Legal",     links: [["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Community Guidelines","/community-guidelines"],["Cookie Policy","/cookie-policy"]] },
           ].map((col) => (

@@ -1,51 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
-// GET posts for a community
-export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const community = await prisma.community.findUnique({ where: { slug } });
-  if (!community) return NextResponse.json({ error: "Not found" }, { status: 404 });
+type Params = { params: Promise<{ slug: string }> };
 
-  const posts = await prisma.post.findMany({
-    where: { communityId: community.id },
-    include: {
-      author:   { select: { id: true, name: true, image: true, headline: true } },
-      _count:   { select: { comments: true, likes: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 30,
-  });
-
-  return NextResponse.json(posts);
-}
-
-// POST new post in community
-export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
-  const session = await auth.api.getSession({ headers: req.headers });
+// POST — create a new discussion post in this forum
+export async function POST(req: NextRequest, { params }: Params) {
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { slug } = await params;
-  const community = await prisma.community.findUnique({ where: { slug } });
-  if (!community) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const user = session.user as { id: string; role?: string };
 
-  // Must be a member
-  const membership = await prisma.communityMember.findUnique({
-    where: { userId_communityId: { userId: session.user.id, communityId: community.id } },
+  const forum = await prisma.forum.findUnique({ where: { slug } });
+  if (!forum) return NextResponse.json({ error: "Forum not found" }, { status: 404 });
+
+  // isAdminOnly check
+  if (forum.isAdminOnly && user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Admin-only forum" }, { status: 403 });
+  }
+
+  const { title, body } = await req.json();
+  if (!title?.trim() || !body?.trim()) {
+    return NextResponse.json({ error: "Title and body required" }, { status: 400 });
+  }
+
+  const post = await prisma.forumPost.create({
+    data: { title: title.trim(), body: body.trim(), forumId: forum.id, authorId: user.id },
+    include: {
+      author: { select: { id: true, name: true, image: true } },
+      _count: { select: { comments: true } },
+    },
   });
-  if (!membership) return NextResponse.json({ error: "Join the community first" }, { status: 403 });
-
-  const { content } = await req.json();
-  if (!content?.trim()) return NextResponse.json({ error: "Content required" }, { status: 400 });
-
-  const post = await prisma.post.create({
-    data: { content, authorId: session.user.id, communityId: community.id },
-    include: { author: { select: { id: true, name: true, image: true, headline: true } }, _count: { select: { comments: true, likes: true } } },
-  });
-
-  // Update comment count on community post count
-  await prisma.community.update({ where: { id: community.id }, data: { memberCount: { increment: 0 } } }).catch(() => {});
 
   return NextResponse.json(post, { status: 201 });
 }

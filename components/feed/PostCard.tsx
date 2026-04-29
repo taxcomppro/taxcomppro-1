@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { Loader2 } from "lucide-react";
+import { Loader2, MoreHorizontal, Pencil, Trash2, Check, X } from "lucide-react";
 import { ThumbsUpIcon, Comment01Icon, Share01Icon, SentIcon } from "hugeicons-react";
 
 interface Author {
@@ -17,6 +17,7 @@ interface Comment {
 
 export interface FeedPost {
   id: string; content: string; images: string[];
+  videoUrl: string | null;
   likeCount: number; commentCount: number; createdAt: string;
   author: Author;
   comments: Comment[];
@@ -38,7 +39,7 @@ const tierBadge: Record<string, string> = {
   MARKETPLACE_PLUS: "bg-emerald-100 text-emerald-700",
 };
 
-export default function PostCard({ post, onUpdate }: { post: FeedPost; onUpdate: (updated: FeedPost) => void }) {
+export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost; onUpdate: (updated: FeedPost) => void; onDelete?: (id: string) => void }) {
   const user = useAppSelector(s => s.auth.user);
   const [liked, setLiked]           = useState(post.likes.length > 0);
   const [likeCount, setLikeCount]   = useState(post._count.likes);
@@ -50,6 +51,49 @@ export default function PostCard({ post, onUpdate }: { post: FeedPost; onUpdate:
   const [commentText, setCommentText] = useState("");
   const [postingComment, setPostingComment] = useState(false);
   const [expanded, setExpanded]     = useState(false);
+
+  // ── edit / delete state ──
+  const [menuOpen, setMenuOpen]     = useState(false);
+  const [editing, setEditing]       = useState(false);
+  const [editText, setEditText]     = useState(post.content);
+  const [saving, setSaving]         = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting]     = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isOwn = user?.id === post.author.id;
+
+  // close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSaveEdit = async () => {
+    if (!editText.trim() || saving) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/feed/${post.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: editText.trim() }),
+      });
+      if (res.ok) {
+        const updated = await res.json() as FeedPost;
+        onUpdate(updated);
+        setEditing(false);
+      }
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/feed/${post.id}`, { method: "DELETE" });
+      if (res.ok) onDelete?.(post.id);
+    } finally { setDeleting(false); setConfirmDelete(false); }
+  };
 
   const handleLike = async () => {
     if (liking) return;
@@ -102,7 +146,8 @@ export default function PostCard({ post, onUpdate }: { post: FeedPost; onUpdate:
   const displayText = isLong && !expanded ? contentText.slice(0, 300) + "…" : contentText;
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden transition-all">
+    <>
+      <div className="bg-white rounded-2xl overflow-hidden transition-all">
       {/* Header */}
       <div className="flex items-start gap-3 p-5 pb-3">
         <div className="w-11 h-11 rounded-full bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
@@ -124,15 +169,58 @@ export default function PostCard({ post, onUpdate }: { post: FeedPost; onUpdate:
           )}
           <div className="text-xs text-slate-400 mt-0.5">{timeAgo(post.createdAt)}</div>
         </div>
+        {/* Three-dot menu for own posts */}
+        {isOwn && (
+          <div className="relative" ref={menuRef}>
+            <button onClick={() => setMenuOpen(o => !o)}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-[#0a1628] transition-all">
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-9 z-20 w-36 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+                <button onClick={() => { setEditing(true); setEditText(post.content); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                  <Pencil className="w-3.5 h-3.5 text-slate-400" /> Edit post
+                </button>
+                <button onClick={() => { setConfirmDelete(true); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" /> Delete post
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Content */}
+      {/* Content / inline edit */}
       <div className="px-5 pb-4">
-        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{displayText}</p>
-        {isLong && (
-          <button onClick={() => setExpanded(e => !e)} className="text-xs font-semibold text-[#0a1628] mt-1 hover:underline">
-            {expanded ? "Show less" : "…see more"}
-          </button>
+        {editing ? (
+          <div className="space-y-2">
+            <textarea
+              value={editText} onChange={e => setEditText(e.target.value)} rows={4}
+              className="w-full text-sm text-slate-700 leading-relaxed border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-[#0a1628] resize-none font-[inherit] transition-all"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setEditing(false)}
+                className="flex items-center gap-1.5 text-xs font-bold text-slate-500 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-50 transition-all">
+                <X className="w-3.5 h-3.5" /> Cancel
+              </button>
+              <button onClick={handleSaveEdit} disabled={saving || !editText.trim()}
+                className="flex items-center gap-1.5 text-xs font-bold bg-[#0a1628] text-white px-4 py-1.5 rounded-xl hover:bg-[#1a3a6b] disabled:opacity-40 transition-all">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{displayText}</p>
+            {isLong && (
+              <button onClick={() => setExpanded(e => !e)} className="text-xs font-semibold text-[#0a1628] mt-1 hover:underline">
+                {expanded ? "Show less" : "…see more"}
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -156,6 +244,19 @@ export default function PostCard({ post, onUpdate }: { post: FeedPost; onUpdate:
               />
             </a>
           ))}
+        </div>
+      )}
+
+      {/* Video */}
+      {post.videoUrl && (
+        <div className="px-5 pb-4">
+          <video
+            src={post.videoUrl}
+            controls
+            playsInline
+            className="w-full rounded-xl overflow-hidden max-h-[420px] bg-black object-contain"
+            style={{ aspectRatio: "16/9" }}
+          />
         </div>
       )}
 
@@ -233,5 +334,27 @@ export default function PostCard({ post, onUpdate }: { post: FeedPost; onUpdate:
         </div>
       )}
     </div>
+
+    {/* ── Confirm delete modal ── */}
+    {confirmDelete && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="w-5 h-5 text-red-500" />
+          </div>
+          <h3 className="font-black text-[#0a1628] text-base">Delete post?</h3>
+          <p className="text-slate-500 text-sm mt-1">This action cannot be undone. The post and all its comments will be permanently removed.</p>
+          <div className="flex gap-3 mt-5">
+            <button onClick={() => setConfirmDelete(false)}
+              className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all">Cancel</button>
+            <button onClick={handleDelete} disabled={deleting}
+              className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 disabled:opacity-40 transition-all flex items-center justify-center gap-2">
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   );
 }

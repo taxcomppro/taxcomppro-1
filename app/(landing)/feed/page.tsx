@@ -93,6 +93,9 @@ export default function FeedPage() {
   const handlePostUpdate = (updated: FeedPost) =>
     setPosts(prev => prev.map(p => p.id === updated.id ? updated : p));
 
+  const handlePostDelete = (id: string) =>
+    setPosts(prev => prev.filter(p => p.id !== id));
+
   return (
     <div className="min-h-screen bg-slate-100 pt-4 pb-12">
       <div className="max-w-[1200px] mx-auto px-4">
@@ -161,7 +164,7 @@ export default function FeedPage() {
                           </a>
                         </div>
                       )}
-                      <PostCard post={post} onUpdate={handlePostUpdate} />
+                      <PostCard post={post} onUpdate={handlePostUpdate} onDelete={handlePostDelete} />
                     </Fragment>
                   );
                 })}

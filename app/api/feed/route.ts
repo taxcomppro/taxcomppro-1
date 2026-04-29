@@ -39,13 +39,15 @@ export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { content, images } = await req.json();
-  if (!content?.trim()) return NextResponse.json({ error: "Content required" }, { status: 400 });
+  const { content, images, videoUrl } = await req.json();
+  if (!content?.trim() && (!images?.length) && !videoUrl)
+    return NextResponse.json({ error: "Content required" }, { status: 400 });
 
   const post = await prisma.post.create({
     data: {
-      content: content.trim(),
-      images: images ?? [],
+      content:  content?.trim() ?? "",
+      images:   images ?? [],
+      videoUrl: videoUrl ?? null,
       authorId: session.user.id,
     },
     include: {

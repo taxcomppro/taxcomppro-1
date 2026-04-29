@@ -191,21 +191,48 @@ export default function ToolkitsPage() {
       {/* Hero */}
       <div className="relative bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50] text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle,white 1px,transparent 1px)", backgroundSize: "28px 28px" }} />
-        <div className="relative max-w-6xl mx-auto px-4 py-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-amber-400/20 border border-amber-400/40 text-amber-300 text-xs font-bold px-4 py-2 rounded-full mb-5">
-            <Download className="w-3.5 h-3.5" /> Digital Downloads · Instant Access
+
+        {/* Glow blobs */}
+        <div className="absolute -top-20 -right-20 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-10 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-6xl mx-auto px-6 py-16 flex flex-col lg:flex-row items-center gap-10">
+
+          {/* Left: text */}
+          <div className="flex-1 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 bg-amber-400/20 border border-amber-400/40 text-amber-300 text-xs font-bold px-4 py-2 rounded-full mb-5">
+              <Download className="w-3.5 h-3.5" /> Digital Downloads · Instant Access
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-black mb-4 leading-tight">
+              Professional Tax <span className="text-amber-400">Toolkits</span>
+            </h1>
+            <p className="text-white/60 text-base max-w-lg mb-6">
+              Premium digital resources for tax professionals — each kit includes exclusive tools, templates, and free community membership.
+            </p>
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-white/60">
+              {["Instant Download", "2 Months Free Membership", "IRS-Compliant Resources", "One-Time Payment"].map(b => (
+                <div key={b} className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" />{b}</div>
+              ))}
+            </div>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black mb-3 leading-tight">
-            Professional Tax <span className="text-amber-400">Toolkits</span>
-          </h1>
-          <p className="text-white/60 text-base max-w-lg mx-auto mb-6">
-            Premium digital resources for tax professionals — each kit includes exclusive tools, templates, and free community membership.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-5 text-xs font-semibold text-white/60">
-            {["Instant Download", "2 Months Free Membership", "IRS-Compliant Resources", "One-Time Payment"].map(b => (
-              <div key={b} className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" />{b}</div>
-            ))}
+
+          {/* Right: hero image */}
+          <div className="relative flex-shrink-0 w-full max-w-sm lg:max-w-md">
+            {/* Amber glow behind image */}
+            <div className="absolute inset-0 bg-amber-400/20 rounded-3xl blur-2xl scale-110 pointer-events-none" />
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-white/10 rotate-1 hover:rotate-0 transition-transform duration-500">
+              <img
+                src="/irs-toolkit-audit-review-hero.png"
+                alt="IRS Toolkit Audit Review"
+                className="w-full object-cover"
+              />
+              {/* Overlay badge */}
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#0a1628]/80 backdrop-blur-sm border border-amber-400/40 text-amber-300 text-[10px] font-black px-3 py-1.5 rounded-full">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> IRS-Compliant Resources
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
 
