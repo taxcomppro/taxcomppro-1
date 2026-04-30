@@ -159,11 +159,11 @@ export default function LandingPage() {
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white leading-[1.08] mb-5 animate-fade-in-up delay-100">
               The Professional Hub for{" "}
-              <span className="bg-gradient-to-r from-[#f0c040] to-[#d4a017] bg-clip-text text-transparent">Tax Experts</span>{" "}
-              &amp; Smart Taxpayers
+              <span className="bg-gradient-to-r from-[#f0c040] to-[#d4a017] bg-clip-text text-transparent">Tax, Finance & Business Experts</span>{" "}
+
             </h1>
             <p className="text-base md:text-lg text-white/65 max-w-xl leading-relaxed mb-8 animate-fade-in-up delay-200">
-              Connect, sell, learn, and grow with thousands of CPAs, enrolled agents, tax attorneys, and taxpayers — all in one secure, professional community.
+              Connect, Collaborate, Sell, and Grow with powerful tools built for professionals all on one secure platform.
             </p>
             <div className="flex gap-4 flex-wrap animate-fade-in-up delay-300">
               <Link href="/register" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] font-bold px-7 py-3.5 rounded-full hover:shadow-[0_0_30px_rgba(212,160,23,0.5)] hover:-translate-y-0.5 transition-all">
@@ -191,7 +191,7 @@ export default function LandingPage() {
           {/* Floating cards */}
           <div className="hidden lg:flex flex-col gap-4 shrink-0">
             {[
-              { icon: ShoppingBag, title: "Tax Services Marketplace", sub: "Browse 800+ verified listings", delay: "0s" },
+              { icon: ShoppingBag, title: "Tax Services Marketplace", sub: "Browse verified listings", delay: "0s" },
               { icon: Users,       title: "Community Hub",               sub: "Join 200+ active groups",      delay: "0.4s" },
               { icon: Shield,      title: "ATLAS AI Assistant",        sub: "Real-time tax guidance",       delay: "0.8s" },
             ].map((c) => (
@@ -215,7 +215,7 @@ export default function LandingPage() {
           <div className="text-center mb-14">
             <p className="text-xs font-bold uppercase tracking-widest text-[#d4a017] mb-3">Why TaxComPro</p>
             <h2 className="text-4xl font-black text-[#0a1628] mb-4">Everything You Need in One Platform</h2>
-            <p className="text-lg text-slate-500 max-w-xl mx-auto">Built specifically for tax professionals and taxpayers who demand the best.</p>
+            <p className="text-lg text-slate-500 max-w-xl mx-auto">Whether you&apos;re solo or multi-location, TaxComPro grows with you.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f) => (
@@ -237,9 +237,9 @@ export default function LandingPage() {
           <div className="flex-1">
             <p className="text-xs font-bold uppercase tracking-widest text-[#d4a017] mb-3">Marketplace</p>
             <h2 className="text-4xl font-black text-[#0a1628] mb-4">Sell Your Expertise.<br />Buy What You Need.</h2>
-            <p className="text-slate-500 text-base leading-relaxed mb-6">Connect professionals offering tax services, training courses, and digital products with clients who need them.</p>
+            <p className="text-slate-500 text-base leading-relaxed mb-6">Connect professionals offering services, training courses, and digital products with clients who need them.</p>
             <ul className="space-y-2.5 mb-8">
-              {["Tax preparation & consulting services","IRS audit defense & representation","Training courses & certifications","Professional referral networks"].map((item) => (
+              {["Tax preparation & consulting services","IRS audit defense & representation","Training courses & certifications","Professional referral networks","Skill Building & Certifications","Tax Office Branding","End to End Tax Office Solutions","Done-for-you systems","Real Estate Investing Courses","Business Startup Training"].map((item) => (
                 <li key={item} className="flex items-center gap-2.5 text-sm text-slate-600">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />{item}
                 </li>
@@ -342,7 +342,7 @@ export default function LandingPage() {
       <section className="py-20 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2445] text-center">
         <div className="max-w-3xl mx-auto px-6">
           <h2 className="text-4xl font-black text-white mb-4">Ready to Join TaxComPro?</h2>
-          <p className="text-white/60 text-lg mb-10">Join thousands of professionals and taxpayers building their future today.</p>
+          <p className="text-white/60 text-lg mb-10">Join a growing network of professionals and taxpayers building their future today.</p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link href="/register" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] font-bold px-8 py-4 rounded-full hover:shadow-[0_0_30px_rgba(212,160,23,0.5)] transition-all">
               Create Free Account <ArrowRight className="w-4 h-4" />

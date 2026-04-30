@@ -251,7 +251,7 @@ export default function ProHubPage() {
         <p className="text-[#d4a017] text-sm font-bold tracking-widest uppercase mb-2">Tax Pro Community</p>
         <h1 className="text-3xl font-black text-white mb-2">Pro Hub</h1>
         <p className="text-slate-400 text-sm max-w-md mx-auto">
-          <span className="text-[#d4a017] font-bold">Ask. Learn. Grow.</span> — Where Tax Professionals Connect &amp; Learn.
+          <span className="text-[#d4a017] font-bold">Ask. Learn. Grow.</span> Where Tax Professionals Connect, Learn from Experienced Peers.
         </p>
       </div>
 

@@ -139,7 +139,8 @@ export default function CoursesPage() {
             <span className="text-[#f0c040]">from the Pros</span>
           </h1>
           <p className="text-white/60 text-lg mb-8 max-w-xl mx-auto">
-            Expert-led courses on tax law, compliance, accounting, and more — taught by certified professionals.
+            Practical courses on tax law, compliance, accounting, and
+more—built by experienced professionals.
           </p>
           <form onSubmit={handleSearch} className="flex gap-3 max-w-xl mx-auto">
             <div className="flex-1 flex items-center gap-2 bg-white/10 border border-white/20 rounded-xl px-4 py-3">
