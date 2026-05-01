@@ -94,7 +94,7 @@ export default function LandingPage() {
           <div className="hidden lg:flex flex-col gap-4 shrink-0">
             {[
               { icon: ShoppingBag, title: "Tax Services Marketplace", sub: "Browse verified listings", delay: "0s" },
-              { icon: Users,       title: "Community Hub",               sub: "Join 200+ active groups",      delay: "0.4s" },
+              { icon: Users,       title: "Community Hub",               sub: "Live audio sessions",      delay: "0.4s" },
               { icon: Shield,      title: "ATLAS AI Assistant",        sub: "Real-time tax guidance",       delay: "0.8s" },
             ].map((c) => (
               <div key={c.title} className="flex items-center gap-3 bg-white/8 backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 min-w-[240px] animate-float" style={{ animationDelay: c.delay }}>
@@ -229,8 +229,8 @@ export default function LandingPage() {
                 </div>
                 <ul className="space-y-2.5 mb-7 flex-1">
                   {plan.features.map((f) => (
-                    <li key={f} className={`flex gap-2 items-start text-xs ${plan.highlight ? "text-white/75" : "text-slate-500"}`}>
-                      <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 mt-px ${plan.highlight ? "text-[#f0c040]" : "text-emerald-500"}`} />{f}
+                    <li key={f} className={`flex gap-2 items-start text-sm ${plan.highlight ? "text-white/80" : "text-slate-600"}`}>
+                      <CheckCircle2 className={`w-4 h-4 shrink-0 mt-px ${plan.highlight ? "text-[#f0c040]" : "text-emerald-500"}`} />{f}
                     </li>
                   ))}
                 </ul>
