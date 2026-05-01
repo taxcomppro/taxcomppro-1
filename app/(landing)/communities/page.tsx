@@ -325,7 +325,7 @@ export default function CommunitiesPage() {
                 <div className="h-16 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50] relative">
                   <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle,white 1px,transparent 1px)", backgroundSize: "20px 20px" }} />
                   <div className="absolute -bottom-8 left-4">
-                    <div className="w-16 h-16 rounded-full border-[3px] border-white bg-[#0a1628] overflow-hidden flex items-center justify-center shadow">
+                    <div className="w-16 h-16 rounded-2xl border-[3px] border-white bg-[#0a1628] overflow-hidden flex items-center justify-center shadow">
                       {user.image
                         ? <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                         : <span className="text-white font-black text-xl">{user.name?.[0]?.toUpperCase()}</span>}

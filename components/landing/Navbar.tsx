@@ -279,7 +279,16 @@ export default function Navbar() {
               )}
 
               {isPending ? (
-                <div className="w-8 h-8 rounded-xl bg-slate-100 animate-pulse ml-1" />
+                <div className="flex items-center gap-2 ml-1">
+                  {/* Skeleton: icon button placeholders */}
+                  <div className="w-9 h-9 rounded-full bg-slate-100 animate-pulse" />
+                  <div className="w-9 h-9 rounded-full bg-slate-100 animate-pulse" />
+                  {/* Skeleton: user pill */}
+                  <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-full pl-2 pr-4 py-1.5 animate-pulse ml-1">
+                    <div className="w-7 h-7 rounded-full bg-slate-200" />
+                    <div className="w-16 h-3.5 rounded-full bg-slate-200" />
+                  </div>
+                </div>
               ) : user ? (
                 <div className="relative ml-1" ref={dropdownRef}>
                   <button

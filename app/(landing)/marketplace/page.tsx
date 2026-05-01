@@ -256,7 +256,7 @@ function MarketplaceSidebar({
             <div className="absolute inset-0 opacity-10"
               style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
             <div className="absolute -bottom-9 left-4">
-              <div className="w-[72px] h-[72px] rounded-full bg-[#0a1628] border-[3px] border-white overflow-hidden flex items-center justify-center shadow-md">
+              <div className="w-[72px] h-[72px] rounded-2xl bg-[#0a1628] border-[3px] border-white overflow-hidden flex items-center justify-center shadow-md">
                 {user.image
                   ? <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   : <span className="text-white font-black text-2xl">{user.name?.[0]?.toUpperCase()}</span>}
