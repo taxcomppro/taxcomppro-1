@@ -1,44 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-const publicRoutes   = ["/", "/marketplace", "/communities", "/login", "/register", "/pricing"];
-const publicPrefixes = ["/marketplace", "/communities", "/courses", "/pricing", "/seller-dashboard", "/pro-hub"];
-const authRoutes     = ["/login", "/register"];
-// These are in (landing) now but require auth
-const protectedLandingRoutes = ["/notifications", "/profile"];
+// Pages anyone can visit without being logged in
+const PUBLIC_PAGES = new Set([
+  "/",
+  "/login",
+  "/register",
+  "/about",
+  "/terms",
+  "/privacy",
+  "/cookie-policy",
+  "/community-guidelines",
+  "/contact",
+]);
+
+// Auth pages — logged-in users get bounced away from these
+const AUTH_PAGES = ["/login", "/register"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Always allow: static files, API routes, public pages
+  // Always pass through: static assets & all API routes (auth is enforced at the route level)
   if (
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
-    pathname.includes(".") ||
-    publicPrefixes.some(p => pathname.startsWith(p))
+    pathname.includes(".")
   ) {
     return NextResponse.next();
   }
 
   const session = await auth.api.getSession({ headers: request.headers });
 
-  // Redirect authenticated users from home → feed
+  // Logged-in user hits landing page → send to feed
   if (session && pathname === "/") {
     return NextResponse.redirect(new URL("/feed", request.url));
   }
 
-  // Redirect authenticated users away from auth pages
-  if (session && authRoutes.some(r => pathname.startsWith(r))) {
+  // Logged-in user tries to visit login/register → send to feed
+  if (session && AUTH_PAGES.some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL("/feed", request.url));
   }
 
-  // Protect landing routes that still require auth
-  const needsAuth =
-    protectedLandingRoutes.some(r => pathname.startsWith(r)) ||
-    (!publicRoutes.includes(pathname) && !authRoutes.some(r => pathname.startsWith(r)));
-
-  if (!session && needsAuth) {
-    return NextResponse.redirect(new URL("/", request.url));
+  // Not logged in & page is NOT public → send to login
+  if (!session && !PUBLIC_PAGES.has(pathname)) {
+    const dest = new URL("/login", request.url);
+    dest.searchParams.set("next", pathname);
+    return NextResponse.redirect(dest);
   }
 
   // Admin-only routes

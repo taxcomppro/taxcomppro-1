@@ -10,7 +10,7 @@ export default function PublicFooter() {
             <Link href="/" className="inline-flex items-center mb-4 bg-white rounded-xl px-3 py-2">
               <Image src="/logo.png" alt="TaxComPro" width={130} height={38} className="object-contain" priority />
             </Link>
-            <p className="text-white/45 text-sm leading-relaxed">The professional community for tax experts and taxpayers across America.</p>
+            <p className="text-white/45 text-sm leading-relaxed">The professional community for tax experts across America.</p>
           </div>
           {[
             { title: "Platform",  links: [["Marketplace","/marketplace"],["Communities","/communities"],["Pricing","/#pricing"],["Dashboard","/dashboard"]] },

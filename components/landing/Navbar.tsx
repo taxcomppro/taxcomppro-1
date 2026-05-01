@@ -154,7 +154,7 @@ export default function Navbar() {
         }
         .atlas-btn:hover { animation: atlas-shine 1.5s ease infinite; }
       `}</style>
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-6 h-[80px] flex items-center gap-4">
 
         {/* Logo */}
@@ -359,7 +359,7 @@ export default function Navbar() {
               ) : (
                 <div className="flex items-center gap-2 ml-1">
                   <Link href="/login"
-                    className="text-sm font-semibold text-white/80 hover:text-white hover:bg-white/8 px-4 py-2 rounded-full transition-all">
+                    className="text-sm font-semibold text-[#0a1628] hover:text-[#d4a017] px-4 py-2 rounded-full transition-all">
                     Sign In
                   </Link>
                   <Link href="/register"
