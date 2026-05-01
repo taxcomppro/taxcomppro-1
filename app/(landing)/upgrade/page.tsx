@@ -1,17 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import {
-  Shield01Icon, StarIcon, MedalFirstPlaceIcon, DiamondIcon, Tick02Icon, LockIcon,
-} from "hugeicons-react";
+import { Loader2, CheckCircle2, Lock } from "lucide-react";
 
 const plans = [
   {
-    name: "Basic Members Only", price: 0, label: "FREE",
-    Icon: Shield01Icon, tier: "FREE", highlight: false,
-    iconBg: "bg-slate-100", iconCls: "text-slate-500",
+    name: "Basic Members Only", price: 0, label: "FREE", period: "",
+    img: "/free.png", tier: "FREE", popular: false, badge: null, savings: null,
     features: [
       "Email Support",
       "Marketplace Access (View)",
@@ -21,12 +18,11 @@ const plans = [
       "Secure Members-Only Environment",
     ],
     cta: "Current Plan",
+    href: null,
   },
   {
-    name: "VIP Members Only", price: 39.99, label: "$39.99",
-    Icon: StarIcon, tier: "VIP", highlight: false,
-    badge: "2 Months FREE",
-    iconBg: "bg-amber-50", iconCls: "text-amber-500",
+    name: "VIP Members Only", price: 39.99, label: "$39.99", period: "/month",
+    img: "/vip.png", tier: "VIP", popular: false, badge: "2 Months FREE", savings: null,
     features: [
       "Priority Email Support",
       "Private Messaging & DMs",
@@ -41,12 +37,11 @@ const plans = [
       "Professional Networking",
     ],
     cta: "Upgrade to VIP",
+    href: null,
   },
   {
-    name: "VIP + Marketplace Bundle", price: 79.99, label: "$79.99",
-    Icon: MedalFirstPlaceIcon, tier: "MARKETPLACE", highlight: true,
-    badge: "Most Popular", savings: "Save $131.96/yr",
-    iconBg: "bg-white/10", iconCls: "text-[#f0c040]",
+    name: "VIP + Marketplace Bundle", price: 79.99, label: "$79.99", period: "/month",
+    img: "/vipplusmatplace.png", tier: "MARKETPLACE", popular: true, badge: "Most Popular", savings: "Save $131.96/yr",
     features: [
       "Professional marketplace listing",
       "Custom seller profile",
@@ -58,12 +53,11 @@ const plans = [
       "Stronger Brand Authority",
     ],
     cta: "Upgrade to Marketplace",
+    href: null,
   },
   {
-    name: "VIP + Marketplace Plus", price: 109.99, label: "$109.99",
-    Icon: DiamondIcon, tier: "MARKETPLACE_PLUS", highlight: true,
-    badge: "Best Value", savings: "Save $131.96/yr",
-    iconBg: "bg-white/10", iconCls: "text-[#f0c040]",
+    name: "VIP + Marketplace Plus", price: 109.99, label: "$109.99", period: "/month",
+    img: "/vipplusmarplaceplus.png", tier: "MARKETPLACE_PLUS", popular: true, badge: "Best Value", savings: "Save $131.96/yr",
     features: [
       "Professional marketplace listing",
       "Custom seller profile",
@@ -77,8 +71,9 @@ const plans = [
       "Post ads/products/services",
     ],
     cta: "Upgrade to Plus",
+    href: null,
   },
-] as const;
+];
 
 export default function UpgradePage() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -101,106 +96,102 @@ export default function UpgradePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 pt-8 pb-16">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 pt-8 pb-16">
+      <div className="max-w-7xl mx-auto px-4">
 
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-12">
+          <p className="text-sm font-bold uppercase tracking-widest text-[#d4a017] mb-3">Pricing</p>
           <h1 className="text-4xl font-black text-[#0a1628] mb-3">Upgrade Your Plan</h1>
-          <p className="text-slate-500 text-base max-w-lg mx-auto">
+          <p className="text-slate-500 text-lg max-w-lg mx-auto">
             All paid plans include 2 months free community access. Cancel anytime.
           </p>
         </div>
 
         {/* Plans grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
-          {plans.map((plan) => {
-            const Icon = plan.Icon;
-            return (
-              <div key={plan.name} className={`relative rounded-2xl overflow-hidden transition-all hover:-translate-y-0.5 flex flex-col ${
-                plan.highlight
-                  ? "bg-[#0a1628] text-white"
-                  : "bg-white"
-              }`}>
-                {/* Top badge */}
-                {"badge" in plan && plan.badge && (
-                  <div className="absolute top-4 right-4">
-                    <span className="bg-[#d4a017] text-[#0a1628] text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wide">
-                      {plan.badge}
-                    </span>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
+          {plans.map((plan) => (
+            <div key={plan.name} className={`relative bg-white rounded-2xl flex flex-col overflow-hidden transition-all hover:-translate-y-1 ${
+              plan.popular
+                ? "shadow-xl border-2 border-[#d4a017]"
+                : "shadow-md border border-slate-200 hover:shadow-xl"
+            }`}>
+              {/* Gold top accent bar */}
+              {plan.popular && <div className="h-1.5 w-full bg-gradient-to-r from-[#f0c040] to-[#d4a017]" />}
+
+              {/* Badge */}
+              {plan.badge && (
+                <div className="absolute top-4 right-4">
+                  <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-wide ${
+                    plan.popular
+                      ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628]"
+                      : "bg-[#0a1628] text-white"
+                  }`}>{plan.badge}</span>
+                </div>
+              )}
+
+              <div className="p-7 flex flex-col flex-1">
+                {/* Plan image */}
+                <div className="flex justify-center mb-5">
+                  <Image src={plan.img} alt={plan.name} width={130} height={130} className="object-contain" />
+                </div>
+
+                {/* Name */}
+                <h3 className="text-center font-black text-base text-[#0a1628] mb-1">{plan.name}</h3>
+
+                {/* Savings */}
+                {plan.savings && (
+                  <p className="text-center text-xs font-bold text-[#d4a017] mb-3">{plan.savings}</p>
                 )}
 
-                <div className="p-6 flex flex-col flex-1">
-                  {/* Savings */}
-                  {"savings" in plan && plan.savings && (
-                    <p className="text-xs font-bold text-[#f0c040] mb-3">{plan.savings}</p>
-                  )}
-
-                  {/* Icon */}
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${plan.iconBg}`}>
-                    <Icon className={`w-6 h-6 ${plan.iconCls}`} />
-                  </div>
-
-                  {/* Plan name */}
-                  <div className={`text-xs font-black uppercase tracking-widest mb-1 ${plan.highlight ? "text-white/50" : "text-slate-400"}`}>
-                    {plan.name}
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-baseline gap-1 mb-6">
-                    <span className={`text-4xl font-black ${plan.highlight ? "text-[#f0c040]" : "text-[#0a1628]"}`}>
-                      {plan.label}
-                    </span>
-                    {plan.price > 0 && (
-                      <span className={`text-sm ${plan.highlight ? "text-white/50" : "text-slate-400"}`}>/month</span>
-                    )}
-                  </div>
-
-                  {/* Features */}
-                  <ul className="space-y-2 mb-7 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className={`flex items-start gap-2 text-xs leading-relaxed ${plan.highlight ? "text-white/70" : "text-slate-500"}`}>
-                        <Tick02Icon className={`w-3.5 h-3.5 shrink-0 mt-px ${plan.highlight ? "text-[#f0c040]" : "text-emerald-500"}`} />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* CTA */}
-                  {plan.tier === "FREE" ? (
-                    <div className={`w-full text-center text-sm font-bold py-3 rounded-xl cursor-default ${plan.highlight ? "bg-white/10 text-white/40" : "bg-slate-100 text-slate-400"}`}>
-                      {plan.cta}
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleUpgrade(plan.tier)}
-                      disabled={loading === plan.tier}
-                      className={`w-full text-sm font-bold py-3 rounded-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${
-                        plan.highlight
-                          ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] hover:shadow-[0_0_20px_rgba(212,160,23,0.4)]"
-                          : "bg-[#0a1628] text-white hover:bg-[#1a3a6b]"
-                      }`}>
-                      {loading === plan.tier ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : plan.cta}
-                    </button>
-                  )}
+                {/* Price */}
+                <div className="flex items-baseline justify-center gap-1 mb-6">
+                  <span className="text-4xl font-black text-[#0a1628]">{plan.label}</span>
+                  <span className="text-sm text-slate-400">{plan.period}</span>
                 </div>
+
+                {/* Features */}
+                <ul className="space-y-2.5 mb-7 flex-1">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex gap-2 items-start text-sm text-slate-600">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 mt-px text-emerald-500" />{f}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                {plan.tier === "FREE" ? (
+                  <div className="w-full text-center text-sm font-bold py-3.5 rounded-full bg-slate-100 text-slate-400 cursor-default">
+                    {plan.cta}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleUpgrade(plan.tier)}
+                    disabled={loading === plan.tier}
+                    className={`w-full text-sm font-bold py-3.5 rounded-full transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${
+                      plan.popular
+                        ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] hover:shadow-[0_0_20px_rgba(212,160,23,0.4)]"
+                        : "bg-[#0a1628] text-white hover:bg-[#1a3a6b]"
+                    }`}>
+                    {loading === plan.tier ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : plan.cta}
+                  </button>
+                )}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
-        {/* Footer trust strip */}
-        <div className="mt-8 bg-white rounded-2xl p-5 text-center flex flex-col sm:flex-row items-center justify-center gap-4">
+        {/* Trust strip */}
+        <div className="mt-8 bg-white rounded-2xl p-5 text-center flex flex-col sm:flex-row items-center justify-center gap-4 border border-slate-200 shadow-sm">
           <span className="flex items-center gap-2 text-sm text-slate-500">
-            <LockIcon className="w-4 h-4 text-slate-400" />
+            <Lock className="w-4 h-4 text-slate-400" />
             Secure payments powered by <strong className="text-[#0a1628]">Stripe</strong>.
             Cancel anytime. No hidden fees.
           </span>
           <span className="text-slate-300 hidden sm:inline">|</span>
           <span className="text-sm text-slate-400">
             Questions?{" "}
-            <Link href="#" className="text-[#0a1628] font-semibold hover:underline">Contact support</Link>
+            <Link href="/contact" className="text-[#0a1628] font-semibold hover:underline">Contact support</Link>
           </span>
         </div>
       </div>

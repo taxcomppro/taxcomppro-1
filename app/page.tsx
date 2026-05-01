@@ -29,26 +29,26 @@ const features = [
 
 const plans = [
   {
-    name: "Basic Members Only", price: "FREE", period: "", icon: Shield,
-    highlight: false, badge: null, savings: null,
+    name: "Basic Members Only", price: "FREE", period: "", img: "/free.png",
+    popular: false, badge: null, savings: null,
     features: ["Email Support","Marketplace Access (View)","Member Directory Access","Communities Access (View)","Marketplace Feed Access","Secure Members-Only Environment"],
     cta: "Join For Free", href: "/register",
   },
   {
-    name: "VIP Members Only", price: "$39.99", period: "/month", icon: Star,
-    highlight: false, badge: "2 Months FREE", savings: null,
+    name: "VIP Members Only", price: "$39.99", period: "/month", img: "/vip.png",
+    popular: false, badge: "2 Months FREE", savings: null,
     features: ["Priority Email Support","Private Messaging & DMs","Training & Educational Support","Marketplace Feed Interaction","Communities Interaction","Private Discussion Forums","Ongoing Education & Training","Ability to Connect","Pro Training Access","ATLAS AI Tax Bot","Professional Networking"],
     cta: "Join Now", href: "/register?plan=VIP",
   },
   {
-    name: "VIP + Marketplace Bundle", price: "$79.99", period: "/month", icon: TrendingUp,
-    highlight: true, badge: "Most Popular", savings: "SAVINGS OF $131.96",
+    name: "VIP + Marketplace Bundle", price: "$79.99", period: "/month", img: "/vipplusmatplace.png",
+    popular: true, badge: "Most Popular", savings: "Save $131.96/yr",
     features: ["Professional marketplace listing","Custom seller profile page","Ability to sell services","Private Discussion Forums","Fully Customizable Profile","Featured in Marketplace directory","Enhanced Visibility & Credibility","Stronger Brand Authority"],
     cta: "Join Now", href: "/register?plan=MARKETPLACE",
   },
   {
-    name: "VIP + Marketplace Plus", price: "$109.99", period: "/month", icon: Scale,
-    highlight: true, badge: "Most Popular", savings: "SAVINGS OF $131.96",
+    name: "VIP + Marketplace Plus", price: "$109.99", period: "/month", img: "/vipplusmarplaceplus.png",
+    popular: true, badge: "Best Value", savings: "Save $131.96/yr",
     features: ["Professional marketplace listing","Custom seller profile","Ability to sell services","Private Discussion Forums","Fully Customizable Profile","Featured in directory","Enhanced Visibility","Live Audio Session Hosting","Live Video Session Hosting","Post ads/products/services"],
     cta: "Join Now", href: "/register?plan=MARKETPLACE_PLUS",
   },
@@ -207,36 +207,72 @@ export default function LandingPage() {
 
 
       {/* ── PRICING ── */}
-      <section id="pricing" className="py-24 bg-white">
+      <section id="pricing" className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-14">
             <p className="text-sm font-bold uppercase tracking-widest text-[#d4a017] mb-3">Pricing</p>
             <h2 className="text-4xl md:text-5xl font-black text-[#0a1628] mb-4">Choose Your Plan</h2>
             <p className="text-lg md:text-xl text-slate-500 max-w-xl mx-auto">Start free, upgrade when you&apos;re ready. All paid plans include 2 months free.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
             {plans.map((plan) => (
-              <div key={plan.name} className={`relative rounded-2xl p-7 border flex flex-col transition-all ${plan.highlight ? "border-[#d4a017] bg-[#0a1628]" : "border-slate-200 bg-white"}`}>
-                {plan.badge && <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#d4a017] text-[#0a1628] text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wide whitespace-nowrap">{plan.badge}</div>}
-                {plan.savings && <p className="text-center text-xs font-bold text-[#f0c040] mb-3">{plan.savings}</p>}
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto ${plan.highlight ? "bg-white/10" : "bg-[#0a1628]/8"}`}>
-                  <plan.icon className={`w-6 h-6 ${plan.highlight ? "text-[#f0c040]" : "text-[#0a1628]"}`} />
+              <div key={plan.name} className={`relative bg-white rounded-2xl flex flex-col overflow-hidden transition-all hover:-translate-y-1 ${
+                plan.popular
+                  ? "shadow-xl border-2 border-[#d4a017]"
+                  : "shadow-md border border-slate-200 hover:shadow-xl"
+              }`}>
+                {/* Gold top accent bar for popular */}
+                {plan.popular && <div className="h-1.5 w-full bg-gradient-to-r from-[#f0c040] to-[#d4a017]" />}
+
+                {/* Badge */}
+                {plan.badge && (
+                  <div className="absolute top-4 right-4">
+                    <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-wide ${
+                      plan.popular
+                        ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628]"
+                        : "bg-[#0a1628] text-white"
+                    }`}>{plan.badge}</span>
+                  </div>
+                )}
+
+                <div className="p-7 flex flex-col flex-1">
+                  {/* Plan image */}
+                  <div className="flex justify-center mb-5">
+                    <Image src={plan.img} alt={plan.name} width={130} height={130} className="object-contain" />
+                  </div>
+
+                  {/* Name */}
+                  <h3 className="text-center font-black text-base text-[#0a1628] mb-1">{plan.name}</h3>
+
+                  {/* Savings */}
+                  {plan.savings && (
+                    <p className="text-center text-xs font-bold text-[#d4a017] mb-3">{plan.savings}</p>
+                  )}
+
+                  {/* Price */}
+                  <div className="flex items-baseline justify-center gap-1 mb-6">
+                    <span className="text-4xl font-black text-[#0a1628]">{plan.price}</span>
+                    <span className="text-sm text-slate-400">{plan.period}</span>
+                  </div>
+
+                  {/* Features */}
+                  <ul className="space-y-2.5 mb-7 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex gap-2 items-start text-sm text-slate-600">
+                        <CheckCircle2 className="w-4 h-4 shrink-0 mt-px text-emerald-500" />{f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA */}
+                  <Link href={plan.href} className={`w-full text-center block font-bold text-sm py-3.5 rounded-full transition-all mt-auto ${
+                    plan.popular
+                      ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] hover:shadow-[0_0_20px_rgba(212,160,23,0.4)]"
+                      : "bg-[#0a1628] text-white hover:bg-[#1a3a6b]"
+                  }`}>
+                    {plan.cta}
+                  </Link>
                 </div>
-                <h3 className={`text-center font-black text-sm mb-3 ${plan.highlight ? "text-white" : "text-[#0a1628]"}`}>{plan.name}</h3>
-                <div className="flex items-baseline justify-center gap-1 mb-5">
-                  <span className={`text-4xl font-black ${plan.highlight ? "text-[#f0c040]" : "text-[#0a1628]"}`}>{plan.price}</span>
-                  <span className={`text-sm ${plan.highlight ? "text-white/55" : "text-slate-400"}`}>{plan.period}</span>
-                </div>
-                <ul className="space-y-2.5 mb-7 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className={`flex gap-2 items-start text-sm ${plan.highlight ? "text-white/80" : "text-slate-600"}`}>
-                      <CheckCircle2 className={`w-4 h-4 shrink-0 mt-px ${plan.highlight ? "text-[#f0c040]" : "text-emerald-500"}`} />{f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href={plan.href} className={`w-full text-center block font-bold text-sm py-3 rounded-full transition-all mt-auto ${plan.highlight ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] hover:opacity-90" : "bg-[#0a1628] text-white hover:bg-[#1a3a6b]"}`}>
-                  {plan.cta}
-                </Link>
               </div>
             ))}
           </div>
