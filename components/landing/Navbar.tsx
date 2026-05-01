@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
     type: "dropdown", label: "Marketplace", icon: ShoppingBag01Icon,
     items: [
       { label: "Marketplace", href: "/marketplace", icon: ShoppingBag01Icon, desc: "" },
-      { label: "Spaces",      href: "/spaces",      icon: Radio01Icon,        desc: "" },
+      { label: "Pro Talks",   href: "/pro-talks",   icon: Radio01Icon,        desc: "" },
     ],
   },
   {

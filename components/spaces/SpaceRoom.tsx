@@ -13,7 +13,7 @@ import {
 } from "@livekit/components-react";
 import { RoomEvent, Track } from "livekit-client";
 import { Mic01Icon, MicOff02Icon, PhoneOff01Icon, Radio01Icon, Message01Icon } from "hugeicons-react";
-import { Loader2, X, Hand, Send, Users, Monitor, MonitorOff } from "lucide-react";
+import { Loader2, X, Hand, Send, Users, Monitor, MonitorOff, Maximize2, Minimize2 } from "lucide-react";
 
 interface SpaceHost { id: string; name: string; image: string | null; headline: string | null; }
 interface Space { id: string; name: string; description: string | null; roomName: string; hostId: string; host: SpaceHost; }
@@ -79,6 +79,8 @@ function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "use
   const [myHandUp, setMyHandUp]   = useState(false);
   const [unread, setUnread]       = useState(0);
   const [screenError, setScreenError] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const screenContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const audioTracks  = useTracks([Track.Source.Microphone], { onlySubscribed: false });
@@ -94,6 +96,21 @@ function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "use
       if (!err?.message?.includes("denied")) setScreenError("Screen share failed.");
     }
   }, [isScreenShareEnabled, localParticipant]);
+
+  const toggleFullscreen = useCallback(async () => {
+    if (!screenContainerRef.current) return;
+    if (!document.fullscreenElement) {
+      await screenContainerRef.current.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   useEffect(() => {
     const handler = (data: Uint8Array) => {
@@ -165,15 +182,21 @@ function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "use
 
         {/* ── Screen share panel ── */}
         {screenTracks.length > 0 && (
-          <div className="mx-4 mt-4 rounded-2xl overflow-hidden border border-violet-500/30 bg-black shrink-0">
+          <div ref={screenContainerRef} className="mx-4 mt-4 rounded-2xl overflow-hidden border border-violet-500/30 bg-black shrink-0">
             <div className="flex items-center gap-2 px-3 py-2 bg-violet-900/40 border-b border-violet-500/20">
               <Monitor className="w-3.5 h-3.5 text-violet-400" />
-              <span className="text-violet-300 text-xs font-semibold">
+              <span className="text-violet-300 text-xs font-semibold flex-1 truncate">
                 {screenTracks[0].participant.name ?? screenTracks[0].participant.identity} is sharing their screen
               </span>
               {screenTracks.length > 1 && (
-                <span className="ml-auto text-violet-400/60 text-[10px]">+{screenTracks.length - 1} more</span>
+                <span className="text-violet-400/60 text-[10px]">+{screenTracks.length - 1} more</span>
               )}
+              <button
+                onClick={toggleFullscreen}
+                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                className="ml-2 w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-violet-300 hover:text-white transition-all shrink-0">
+                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
             </div>
             <VideoTrack trackRef={screenTracks[0]} className="w-full max-h-[45vh] object-contain bg-black" />
           </div>
@@ -260,7 +283,7 @@ function RoomInner({ space, isAdmin, onEnd, ending }: Omit<Props, "token" | "use
               {unread > 0 && <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-violet-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">{unread}</span>}
             </button>
 
-            <button onClick={() => router.push("/spaces")}
+            <button onClick={() => router.push("/pro-talks")}
               className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/8 hover:bg-red-500/15 text-white/60 hover:text-red-400 font-semibold text-sm transition-all border border-transparent">
               <PhoneOff01Icon className="w-4 h-4" /> Leave
             </button>
@@ -352,7 +375,7 @@ export default function SpaceRoom({ space, token, isAdmin, userId, onEnd, ending
   return (
     <LiveKitRoom serverUrl={lkUrl} token={token} connect audio video={false}
       onConnected={() => setConnected(true)}
-      onDisconnected={() => router.push("/spaces")}
+      onDisconnected={() => router.push("/pro-talks")}
       style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", flexDirection: "column" }}>
       {!connected ? (
         <div className="fixed inset-0 z-[100] bg-[#06091a] flex flex-col items-center justify-center gap-4">

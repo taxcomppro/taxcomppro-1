@@ -49,7 +49,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-slate-100">
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo.png" alt="TaxComPro" width={120} height={36} className="object-contain" priority />
+          <Image src="/logo.png" alt="TaxComPro" width={120} height={36} className="object-contain" style={{ height: "auto" }} priority />
         </Link>
       </div>
 
