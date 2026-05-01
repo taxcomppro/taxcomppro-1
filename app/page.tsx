@@ -19,12 +19,12 @@ const navLinks = [
 ];
 
 const features = [
-  { icon: Users,        title: "Professional Network",    desc: "Connect with CPAs, enrolled agents, and tax nationwide." },
-  { icon: ShoppingBag,  title: "Marketplace",             desc: "Buy and sell tax services, products, trainings, and courses." },
-  { icon: GraduationCap,title: "Communities",     desc: "Join or create communities around your niche." },
-  { icon: Shield,       title: "ATLAS AI Tax Bot",        desc: "AI-powered tax assistant for real-time tax guidance and compliance." },
-  { icon: Mic,          title: "Live Sessions",           desc: "Host and attend live audio/video sessions with verified professionals." },
-  { icon: Lock,         title: "Members-Only Access",     desc: "Secure, verified community with gated content and private forums." },
+  { img: "/features/professional_network.png", title: "Professional Network",   desc: "Connect with CPAs, enrolled agents, and tax professionals nationwide." },
+  { img: "/features/markeplace.png",           title: "Marketplace",             desc: "Buy and sell tax services, products, trainings, and courses." },
+  { img: "/features/communitues.png",          title: "Communities",             desc: "Join or create communities around your niche." },
+  { img: "/features/atlas.png",               title: "ATLAS AI Tax Bot",        desc: "AI-powered tax assistant for real-time tax guidance and compliance." },
+  { img: "/features/Live Sessions.png",        title: "Live Sessions",           desc: "Host and attend live audio/video sessions with verified professionals." },
+  { img: "/features/MembersOnly Access.png",   title: "Members-Only Access",     desc: "Secure, verified community with gated content and private forums." },
 ];
 
 const plans = [
@@ -121,9 +121,9 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f) => (
-              <div key={f.title} className="bg-white border border-slate-200 rounded-2xl p-8 hover:border-[#d4a017] hover:-translate-y-1 hover:shadow-xl transition-all">
-                <div className="w-12 h-12 bg-[#0a1628]/8 rounded-xl flex items-center justify-center mb-5">
-                  <f.icon className="w-6 h-6 text-[#0a1628]" />
+              <div key={f.title} className="bg-white border border-slate-200 rounded-2xl p-8 hover:border-[#d4a017] hover:-translate-y-1 hover:shadow-xl transition-all flex flex-col items-center text-center">
+                <div className="mb-5">
+                  <Image src={f.img} alt={f.title} width={80} height={80} className="object-contain" />
                 </div>
                 <h3 className="text-xl font-bold text-[#0a1628] mb-2">{f.title}</h3>
                 <p className="text-slate-500 text-base leading-relaxed">{f.desc}</p>
