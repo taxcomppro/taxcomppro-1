@@ -159,27 +159,6 @@ more—built by experienced professionals.
         </div>
       </div>
 
-      {/* Stats strip */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-8 overflow-x-auto">
-          {[
-            { icon: BookOpen, label: "Expert Courses", value: `${courses.length}+` },
-            { icon: Users, label: "Enrolled Students", value: `${courses.reduce((s, c) => s + c._count.enrollments, 0)}+` },
-            { icon: Star, label: "Categories", value: (CATEGORIES.length - 1).toString() },
-            { icon: GraduationCap, label: "Certifications", value: "Coming Soon" },
-          ].map(({ icon: Icon, label, value }) => (
-            <div key={label} className="flex items-center gap-2.5 shrink-0">
-              <div className="w-8 h-8 bg-[#f0c040]/10 rounded-lg flex items-center justify-center">
-                <Icon className="w-4 h-4 text-[#d4a017]" />
-              </div>
-              <div>
-                <div className="text-sm font-black text-[#0a1628]">{value}</div>
-                <div className="text-xs text-slate-400">{label}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       <div className="max-w-6xl mx-auto px-6 py-10">
         {/* Filters */}

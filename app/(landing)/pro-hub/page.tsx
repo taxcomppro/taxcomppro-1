@@ -248,7 +248,6 @@ export default function ProHubPage() {
     <div className="min-h-screen bg-[#f4f6fb]">
       {/* Hero */}
       <div className="bg-[#0a1628] py-10 px-4 text-center">
-        <p className="text-[#d4a017] text-sm font-bold tracking-widest uppercase mb-2">Tax Pro Community</p>
         <h1 className="text-3xl font-black text-white mb-2">Pro Hub</h1>
         <p className="text-slate-400 text-sm max-w-md mx-auto">
           <span className="text-[#d4a017] font-bold">Ask. Learn. Grow.</span> Where Tax Professionals Connect, Learn from Experienced Peers.
