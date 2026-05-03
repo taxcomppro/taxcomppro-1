@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, Trash2, ChevronDown, ChevronRight,
   Loader2, CheckCircle2, BookOpen, Video, FileText, HelpCircle, GraduationCap,
+  Upload, X,
 } from "lucide-react";
+import RichTextEditor from "@/components/courses/RichTextEditor";
 
 const CATEGORIES = ["Tax Law","Compliance","Accounting","Bookkeeping","Audit","Financial Planning","Business Tax","Payroll"];
 type ContentType = "VIDEO" | "TEXT" | "QUIZ";
@@ -31,7 +33,10 @@ export default function CreateCoursePage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState(""); const [slug, setSlug] = useState(""); const [description, setDesc] = useState("");
-  const [thumbnail, setThumbnail] = useState(""); const [category, setCategory] = useState(CATEGORIES[0]);
+  const [thumbnail, setThumbnail] = useState("");
+  const [thumbUploading, setThumbUploading] = useState(false);
+  const thumbInputRef = useRef<HTMLInputElement>(null);
+  const [category, setCategory] = useState(CATEGORIES[0]);
   const [level, setLevel] = useState("BEGINNER"); const [isFree, setIsFree] = useState(true);
   const [price, setPrice] = useState(0); const [isSequential, setIsSequential] = useState(true);
   const [sections, setSections] = useState<SectionDraft[]>([]);
@@ -39,6 +44,19 @@ export default function CreateCoursePage() {
   const [saving, setSaving] = useState(false); const [error, setError] = useState(""); const [done, setDone] = useState(false);
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([""]);  
   const [requirements, setRequirements]         = useState<string[]>([""]);
+
+  const handleThumbUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    setThumbUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("files", file);
+      fd.append("folder", "course-thumbnails");
+      const res  = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json() as { urls?: string[] };
+      if (data.urls?.[0]) setThumbnail(data.urls[0]);
+    } finally { setThumbUploading(false); }
+  };
 
   const autoSlug = (t: string) => t.toLowerCase().trim().replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").slice(0,80);
   const handleTitle = (t: string) => { setTitle(t); if (!slug || slug === autoSlug(title)) setSlug(autoSlug(t)); };
@@ -141,9 +159,46 @@ export default function CreateCoursePage() {
                 className="w-full font-[inherit] text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-[#0a1628] transition-all resize-none"/>
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Thumbnail URL</label>
-              <input value={thumbnail} onChange={e=>setThumbnail(e.target.value)} placeholder="https://example.com/thumb.jpg"
-                className="w-full font-[inherit] text-sm border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-[#0a1628] transition-all"/>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Course Thumbnail</label>
+              <input
+                ref={thumbInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleThumbUpload(f); e.target.value = ""; }}
+              />
+              {thumbnail ? (
+                <div className="relative inline-block">
+                  <img src={thumbnail} alt="Thumbnail" className="h-36 w-auto rounded-xl object-cover border border-slate-200" />
+                  <button
+                    type="button"
+                    onClick={() => setThumbnail("")}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => thumbInputRef.current?.click()}
+                    className="absolute bottom-2 right-2 text-xs font-bold bg-white/90 text-slate-700 px-2 py-1 rounded-lg shadow hover:bg-white transition-all"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => thumbInputRef.current?.click()}
+                  disabled={thumbUploading}
+                  className="flex flex-col items-center justify-center gap-2 w-full h-36 border-2 border-dashed border-slate-200 rounded-xl hover:border-[#0a1628] hover:bg-slate-50 transition-all text-slate-400 disabled:opacity-50"
+                >
+                  {thumbUploading
+                    ? <Loader2 className="w-6 h-6 animate-spin" />
+                    : <Upload className="w-6 h-6" />}
+                  <span className="text-sm font-medium">{thumbUploading ? "Uploading…" : "Click to upload thumbnail"}</span>
+                  <span className="text-xs text-slate-300">PNG, JPG, WEBP — max 5 MB</span>
+                </button>
+              )}
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Category *</label>
@@ -300,8 +355,12 @@ export default function CreateCoursePage() {
                           )}
 
                           {l.contentType === "TEXT" && (
-                            <textarea value={l.textContent} onChange={e=>updLesson(sec.id,l.id,"textContent",e.target.value)} rows={6} placeholder="Write the article content here (supports plain text or markdown)…"
-                              className="w-full font-[inherit] text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-[#0a1628] bg-white resize-none"/>
+                            <RichTextEditor
+                              value={l.textContent}
+                              onChange={val => updLesson(sec.id, l.id, "textContent", val)}
+                              placeholder="Write the article content here…"
+                              minHeight={220}
+                            />
                           )}
 
                           {l.contentType === "QUIZ" && (

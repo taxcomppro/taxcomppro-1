@@ -13,7 +13,14 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const formData = await req.formData();
-  const files = formData.getAll("files") as File[];
+  const files    = formData.getAll("files") as File[];
+  const folder   = (formData.get("folder") as string | null) ?? "taxcompro/posts";
+  // Map shorthand folder names to full Cloudinary paths
+  const folderMap: Record<string, string> = {
+    "course-thumbnails": "taxcompro/course-thumbnails",
+    "course-articles":   "taxcompro/course-articles",
+  };
+  const cloudFolder = folderMap[folder] ?? `taxcompro/${folder}`;
 
   if (!files.length) return NextResponse.json({ error: "No files" }, { status: 400 });
   if (files.length > 4)  return NextResponse.json({ error: "Max 4 images" }, { status: 400 });
@@ -27,7 +34,7 @@ export async function POST(req: NextRequest) {
     const dataUri     = `data:${file.type};base64,${b64}`;
 
     const result = await cloudinary.uploader.upload(dataUri, {
-      folder:          "taxcompro/posts",
+      folder:          cloudFolder,
       resource_type:   "image",
       transformation:  [{ width: 1200, crop: "limit", quality: "auto:good" }],
     });

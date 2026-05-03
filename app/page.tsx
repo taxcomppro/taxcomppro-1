@@ -19,12 +19,15 @@ const navLinks = [
 ];
 
 const features = [
-  { img: "/features/professional_network.png", title: "Professional Network",   desc: "Connect with CPAs, enrolled agents, and tax professionals nationwide." },
-  { img: "/features/markeplace.png",           title: "Marketplace",             desc: "Buy and sell tax services, products, trainings, and courses." },
-  { img: "/features/communitues.png",          title: "Communities",             desc: "Join or create communities around your niche." },
-  { img: "/features/atlas.png",               title: "ATLAS AI Tax Bot",        desc: "AI-powered tax assistant for real-time tax guidance and compliance." },
-  { img: "/features/Live Sessions.png",        title: "Live Sessions",           desc: "Host and attend live audio/video sessions with verified professionals." },
-  { img: "/features/MembersOnly Access.png",   title: "Members-Only Access",     desc: "Secure, verified community with gated content and private forums." },
+  { img: "/features/professional_network.png", title: "Professional Network",   desc: "Connect with business experts and tax professionals nationwide" },
+  { img: "/features/markeplace.png",           title: "Marketplace",             desc: "Buy and sell services, products, trainings, and courses" },
+  { img: "/features/communitues.png",          title: "Communities",             desc: "Join or create communities around your niche" },
+  { img: "/icon.png",               title: "ATLAS AI Tax Assistant",        desc: "AI-powered tax assistant for real-time tax guidance and compliance" },
+  { img: "/features/Live Sessions.png",        title: "Live Sessions",           
+    desc: (<>
+      Host and attend live audio/video sessions with verified professionals. 
+    </>) },
+  { img: "/features/MembersOnly Access.png",   title: "Members-Only Access",     desc: "Secure, verified community with gated content and private forums" },
 ];
 
 const plans = [
@@ -93,7 +96,7 @@ export default function LandingPage() {
           {/* Floating cards */}
           <div className="hidden lg:flex flex-col gap-4 shrink-0">
             {[
-              { icon: ShoppingBag, title: "Tax Services Marketplace", sub: "Browse verified listings", delay: "0s" },
+              { icon: ShoppingBag, title: "Pro Marketplace", sub: "Browse verified listings", delay: "0s" },
               { icon: Users,       title: "Community Hub",               sub: "Live audio sessions",      delay: "0.4s" },
               { icon: Shield,      title: "ATLAS AI Assistant",        sub: "Real-time tax guidance",       delay: "0.8s" },
             ].map((c) => (
@@ -139,7 +142,7 @@ export default function LandingPage() {
           <div className="flex-1">
             <p className="text-xs font-bold uppercase tracking-widest text-[#d4a017] mb-3">Marketplace</p>
             <h2 className="text-5xl font-black text-[#0a1628] mb-4">Sell Your Expertise.<br />Buy What You Need.</h2>
-            <p className="text-slate-500 text-lg leading-relaxed mb-6">Connect professionals offering services, training courses, and digital products with clients who need them.</p>
+            <p className="text-slate-500 text-lg leading-relaxed mb-6">Connect professionals offering services, training courses, and digital products with members who need them.</p>
             <ul className="space-y-2.5 mb-8">
               {["Skill Building & Certifications","Tax Office Branding","End to End Tax Office Solutions","Done-for-you systems","Real Estate Investing Courses","Business Startup Training"].map((item) => (
                 <li key={item} className="flex items-center gap-2.5 text-base text-slate-600">
@@ -152,7 +155,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="flex-1 flex flex-col gap-3">
-            {[["IRS Audit Defense Service","$299/hr",Shield],["Tax Planning Consultation","$150/session",TrendingUp],["CE Credits Training Bundle","$199",GraduationCap],["CPA Referral Network","Free Access",Users]].map(([title, price, Icon]) => (
+            {[["TAX SOFTWARE","$299/hr",Shield],["REAL ESTATE COURSE","$150/session",TrendingUp],["BUSINESS COACHING NETWORK","$199",GraduationCap],["CREDIT REPAIR COACHING","Free Access",Users]].map(([title, price, Icon]) => (
               <div key={title as string} className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4 hover:shadow-md transition-all">
                 <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
                   <Icon className="w-5 h-5 text-[#0a1628]" />
@@ -283,7 +286,8 @@ export default function LandingPage() {
       <section className="py-20 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2445] text-center">
         <div className="max-w-3xl mx-auto px-6">
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4">Ready to Join TaxComPro?</h2>
-          <p className="text-white/80 text-lg md:text-xl mb-10">Join a growing network of professionals and taxpayers building their future today.</p>
+          <p className="text-white/80 text-lg md:text-xl mb-10">Join a growing network of members building their future today.
+</p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link href="/register" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] font-bold px-8 py-4 rounded-full hover:shadow-[0_0_30px_rgba(212,160,23,0.5)] transition-all">
               Create Free Account <ArrowRight className="w-4 h-4" />
@@ -303,7 +307,7 @@ export default function LandingPage() {
               <Link href="/" className="inline-flex items-center mb-4 bg-white rounded-xl px-3 py-2">
                 <Image src="/logo.png" alt="TaxComPro" width={130} height={38} className="object-contain" style={{ height: "auto" }} priority />
               </Link>
-              <p className="text-white/45 text-sm leading-relaxed">The professional community for tax experts and taxpayers across America.</p>
+              <p className="text-white/45 text-sm leading-relaxed">The professional community for tax experts across America.</p>
             </div>
             {[
               { title: "Platform", links: [["Marketplace","/marketplace"],["Communities","/communities"],["Pricing","/#pricing"],["Dashboard","/dashboard"]] },

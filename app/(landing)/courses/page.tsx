@@ -46,8 +46,8 @@ function CourseCard({ course }: { course: Course }) {
   return (
     <Link href={`/courses/${course.slug}`}
       className="group bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
-      {/* Thumbnail */}
-      <div className="relative h-44 bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] overflow-hidden">
+      {/* Thumbnail — 1:1 square */}
+      <div className="relative aspect-square bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] overflow-hidden">
         {course.thumbnail
           ? <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           : (

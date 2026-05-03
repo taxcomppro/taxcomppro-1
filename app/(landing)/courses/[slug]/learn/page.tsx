@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 import {
   ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, GraduationCap,
-  Loader2, Lock, Play, Trophy, FileText, HelpCircle, Video, Award,
+  Loader2, Lock, Play, Trophy, FileText, HelpCircle, Video, Award, Type,
 } from "lucide-react";
 import Certificate from "@/components/courses/Certificate";
 
@@ -54,6 +54,7 @@ export default function LearnPage() {
   const [quizResult, setQuizResult]   = useState<QuizResult | null>(null);
   const [quizSubmitting, setQuizSubmitting] = useState(false);
   const [showCert, setShowCert]       = useState(false);
+  const [fontSize, setFontSize]       = useState(16);
 
   useEffect(() => {
     if (isPending) return;
@@ -247,14 +248,66 @@ export default function LearnPage() {
                 </div>
               )}
 
-              {/* TEXT */}
               {activeLesson.contentType === "TEXT" && (
-                <div className="max-w-3xl mx-auto p-10">
-                  <div className="flex items-center gap-2 mb-6 text-white/40 text-sm">
-                    <FileText className="w-4 h-4" /> Article
+                <div className="max-w-3xl mx-auto">
+                  {/* Font-size control bar */}
+                  <div className="sticky top-0 z-10 flex items-center gap-3 px-10 py-2.5 bg-[#0a1628]/90 backdrop-blur border-b border-white/8">
+                    <Type className="w-3.5 h-3.5 text-white/40 shrink-0" />
+                    <span className="text-white/40 text-xs shrink-0">Aa</span>
+                    <button
+                      type="button"
+                      onClick={() => setFontSize(s => Math.max(12, s - 1))}
+                      className="w-6 h-6 rounded-md bg-white/8 hover:bg-white/15 text-white/60 hover:text-white flex items-center justify-center text-base leading-none transition-all shrink-0"
+                      title="Decrease font size"
+                    >−</button>
+                    <input
+                      type="range"
+                      min={12}
+                      max={28}
+                      step={1}
+                      value={fontSize}
+                      onChange={e => setFontSize(Number(e.target.value))}
+                      className="flex-1 h-1.5 accent-[#f0c040] cursor-pointer"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFontSize(s => Math.min(28, s + 1))}
+                      className="w-6 h-6 rounded-md bg-white/8 hover:bg-white/15 text-white/60 hover:text-white flex items-center justify-center text-base leading-none transition-all shrink-0"
+                      title="Increase font size"
+                    >+</button>
+                    <span className="text-white/30 text-xs w-8 text-right shrink-0">{fontSize}px</span>
+                    <button
+                      type="button"
+                      onClick={() => setFontSize(16)}
+                      className="text-[10px] text-white/25 hover:text-white/60 transition-colors shrink-0 ml-1"
+                      title="Reset to default"
+                    >Reset</button>
                   </div>
-                  <div className="prose prose-invert prose-sm max-w-none leading-relaxed whitespace-pre-wrap text-white/80">
-                    {activeLesson.textContent || "No content for this lesson."}
+
+                  {/* Article content */}
+                  <div className="p-10">
+                    <div className="flex items-center gap-2 mb-6 text-white/40 text-sm">
+                      <FileText className="w-4 h-4" /> Article
+                    </div>
+                    {activeLesson.textContent ? (
+                      <div
+                        style={{ fontSize: `${fontSize}px`, lineHeight: 1.75 }}
+                        className="prose prose-invert max-w-none text-white/80
+                          prose-h1:text-white prose-h1:font-black prose-h1:mb-3
+                          prose-h2:text-white prose-h2:font-bold prose-h2:mb-2
+                          prose-p:mb-3 prose-p:text-white/80
+                          prose-ul:list-disc prose-ul:pl-5 prose-li:mb-1
+                          prose-ol:list-decimal prose-ol:pl-5
+                          prose-blockquote:border-l-4 prose-blockquote:border-[#d4a017] prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-white/50
+                          prose-a:text-[#f0c040] prose-a:underline
+                          prose-img:rounded-xl prose-img:max-w-full prose-img:my-4
+                          prose-hr:border-white/10 prose-hr:my-6
+                          prose-strong:text-white prose-em:text-white/90"
+                        dangerouslySetInnerHTML={{ __html: activeLesson.textContent }}
+                      />
+                    ) : (
+                      <p className="text-white/30 italic">No content for this lesson.</p>
+                    )}
                   </div>
                 </div>
               )}
