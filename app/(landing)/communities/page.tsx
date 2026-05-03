@@ -347,7 +347,7 @@ export default function CommunitiesPage() {
               </div>
             )}
 
-            {isAdmin ? (
+            {isAdmin ? ( 
               <button onClick={() => setShowCreate(true)}
                 className="flex items-center justify-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-4 rounded-xl hover:bg-[#1a3a6b] transition-all w-full">
                 <Plus className="w-4 h-4" /> Create Community
