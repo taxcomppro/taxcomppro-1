@@ -186,10 +186,10 @@ function ForumCard({ f, isAdmin, onEdit, onDelete }: {
         </div>
 
         {/* Content */}
-        <div className="p-4">
-          <h3 className="font-black text-[#0a1628] text-sm leading-snug group-hover:text-[#1a3a6b] transition-colors mb-1">{f.name}</h3>
-          <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2 mb-3">{f.description}</p>
-          <div className="flex items-center justify-between text-[11px] text-slate-400">
+        <div className="p-5">
+          <h3 className="font-black text-[#0a1628] text-base leading-snug group-hover:text-[#1a3a6b] transition-colors mb-1">{f.name}</h3>
+          <p className="text-sm text-slate-400 leading-relaxed line-clamp-2 mb-3">{f.description}</p>
+          <div className="flex items-center justify-between text-xs text-slate-400">
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{f._count.posts} discussions</span>
             </div>
@@ -247,20 +247,20 @@ export default function ProHubPage() {
   return (
     <div className="min-h-screen bg-[#f4f6fb]">
       {/* Hero */}
-      <div className="bg-[#0a1628] py-10 px-4 text-center">
-        <h1 className="text-3xl font-black text-white mb-2">Pro Hub</h1>
-        <p className="text-slate-400 text-sm max-w-md mx-auto">
+      <div className="bg-[#0a1628] py-12 px-4 text-center">
+        <h1 className="text-4xl font-black text-white mb-2">Pro Hub</h1>
+        <p className="text-slate-400 text-base max-w-lg mx-auto">
           <span className="text-[#d4a017] font-bold">Ask. Learn. Grow.</span> Where Tax Professionals Connect, Learn from Experienced Peers.
         </p>
       </div>
 
       {/* Content */}
-      <div className="max-w-[1100px] mx-auto px-4 py-8">
+      <div className="max-w-[1200px] mx-auto px-4 py-8">
         {/* Toolbar */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="font-black text-[#0a1628] text-xl">Discussion Forums</h2>
-            <p className="text-slate-400 text-sm mt-0.5">
+            <h2 className="font-black text-[#0a1628] text-2xl">Discussion Forums</h2>
+            <p className="text-slate-400 text-base mt-0.5">
               {loading ? "Loading…" : `${forums.length} forum${forums.length !== 1 ? "s" : ""}`}
             </p>
           </div>

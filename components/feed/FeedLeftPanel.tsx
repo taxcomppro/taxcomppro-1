@@ -90,9 +90,9 @@ export default function FeedLeftPanel() {
         <div className="px-4 pt-12 pb-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <div className="font-extrabold text-[#0a1628] text-base leading-tight truncate">{user.name}</div>
+              <div className="font-extrabold text-[#0a1628] text-lg leading-tight truncate">{user.name}</div>
               <div className="mt-1.5">
-                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${tierColor[tier]}`}>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${tierColor[tier]}`}>
                   {tierLabel[tier]}
                 </span>
               </div>
@@ -144,9 +144,9 @@ export default function FeedLeftPanel() {
           ) : (
             <div className="mt-2.5 space-y-1">
               {user.headline
-                ? <p className="text-xs font-semibold text-slate-600 leading-snug">{user.headline}</p>
-                : <p className="text-xs text-slate-400 italic">No headline — click ✎ to add one</p>}
-              {user.bio && <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{user.bio}</p>}
+                ? <p className="text-sm font-semibold text-slate-600 leading-snug">{user.headline}</p>
+                : <p className="text-sm text-slate-400 italic">No headline — click ✎ to add one</p>}
+              {user.bio && <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">{user.bio}</p>}
             </div>
           )}
 
@@ -172,8 +172,8 @@ export default function FeedLeftPanel() {
             ...(user.role === "ADMIN" ? [{ icon: Chart01Icon, label: "Admin Panel", href: "/admin" }] : []),
           ].map(l => (
             <Link key={l.href} href={l.href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 text-sm font-medium hover:bg-slate-50 hover:text-[#0a1628] transition-all group">
-              <l.icon className="w-4 h-4 text-slate-400 group-hover:text-[#0a1628] transition-colors" />
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 text-base font-medium hover:bg-slate-50 hover:text-[#0a1628] transition-all group">
+              <l.icon className="w-5 h-5 text-slate-400 group-hover:text-[#0a1628] transition-colors" />
               {l.label}
             </Link>
           ))}

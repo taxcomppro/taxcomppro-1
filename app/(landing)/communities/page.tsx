@@ -117,23 +117,23 @@ function GridCard({ c, idx, onJoin, joining, joined, onLeave, leaving }: {
       </div>
       {/* Body */}
       <div className="pt-8 px-4 pb-4 flex flex-col flex-1">
-        <h3 className="font-black text-[#0a1628] text-sm leading-snug group-hover:text-[#1a3a6b] transition-colors">{c.name}</h3>
-        <p className="text-[11px] text-slate-400 mt-0.5 mb-2">by {c.creator.name}</p>
-        <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 mb-4 flex-1">{c.description}</p>
+        <h3 className="font-black text-[#0a1628] text-base leading-snug group-hover:text-[#1a3a6b] transition-colors">{c.name}</h3>
+        <p className="text-xs text-slate-400 mt-0.5 mb-2">by {c.creator.name}</p>
+        <p className="text-slate-500 text-sm leading-relaxed line-clamp-2 mb-4 flex-1">{c.description}</p>
         <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-3 text-[11px] text-slate-400">
+          <div className="flex items-center gap-3 text-xs text-slate-400">
             <span className="flex items-center gap-1"><Users className="w-3 h-3" />{c.memberCount}</span>
             <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{c._count.posts}</span>
           </div>
           {joined ? (
             <button onClick={e => { e.preventDefault(); onLeave(c.id); }} disabled={leaving}
-              className="flex items-center gap-1 text-[11px] font-bold text-red-500 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-full transition-all disabled:opacity-50">
+              className="flex items-center gap-1 text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-full transition-all disabled:opacity-50">
               {leaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />}
               {leaving ? "…" : "Leave"}
             </button>
           ) : (
             <button onClick={e => { e.preventDefault(); onJoin(c.id); }} disabled={joining}
-              className="text-[11px] font-bold bg-[#0a1628] text-white px-3 py-1.5 rounded-full hover:bg-[#1a3a6b] transition-all disabled:opacity-50">
+              className="text-xs font-bold bg-[#0a1628] text-white px-3 py-1.5 rounded-full hover:bg-[#1a3a6b] transition-all disabled:opacity-50">
               {joining ? "…" : "Join"}
             </button>
           )}
@@ -161,25 +161,25 @@ function ListRow({ c, idx, onJoin, joining, joined, onLeave, leaving }: {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className="font-black text-[#0a1628] text-sm group-hover:text-[#1a3a6b] transition-colors truncate">{c.name}</h3>
+          <h3 className="font-black text-[#0a1628] text-base group-hover:text-[#1a3a6b] transition-colors truncate">{c.name}</h3>
           {!c.isPublic && <Lock className="w-3 h-3 text-slate-400 shrink-0" />}
         </div>
-        <p className="text-xs text-slate-400 truncate">{c.description}</p>
+        <p className="text-sm text-slate-400 truncate">{c.description}</p>
       </div>
-      <div className="hidden sm:flex items-center gap-4 text-xs text-slate-400 shrink-0">
+      <div className="hidden sm:flex items-center gap-4 text-sm text-slate-400 shrink-0">
         <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{c.memberCount}</span>
         <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" />{c._count.posts}</span>
       </div>
       <div className="shrink-0 ml-2">
         {joined ? (
           <button onClick={e => { e.preventDefault(); onLeave(c.id); }} disabled={leaving}
-            className="flex items-center gap-1 text-[11px] font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-all disabled:opacity-50">
+            className="flex items-center gap-1 text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-all disabled:opacity-50">
             {leaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />}
             {leaving ? "…" : "Leave"}
           </button>
         ) : (
           <button onClick={e => { e.preventDefault(); onJoin(c.id); }} disabled={joining}
-            className="text-[11px] font-bold bg-[#0a1628] text-white px-4 py-1.5 rounded-full hover:bg-[#1a3a6b] transition-all disabled:opacity-50">
+            className="text-xs font-bold bg-[#0a1628] text-white px-4 py-1.5 rounded-full hover:bg-[#1a3a6b] transition-all disabled:opacity-50">
             {joining ? "…" : "Join"}
           </button>
         )}
@@ -315,8 +315,8 @@ export default function CommunitiesPage() {
         />
       )}
 
-      <div className="max-w-[1200px] mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5 items-start">
+      <div className="max-w-[1320px] mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
 
           {/* ── Sidebar ── */}
           <div className="hidden lg:block self-start sticky top-[90px] space-y-3">
@@ -333,13 +333,13 @@ export default function CommunitiesPage() {
                   </div>
                 </div>
                 <div className="px-4 pt-10 pb-4">
-                  <div className="font-black text-[#0a1628] text-sm">{user.name}</div>
-                  <div className="text-xs text-slate-400 mt-0.5 mb-3">{user.headline ?? "No headline"}</div>
+                  <div className="font-black text-[#0a1628] text-base">{user.name}</div>
+                  <div className="text-sm text-slate-400 mt-0.5 mb-3">{user.headline ?? "No headline"}</div>
                   <div className="grid grid-cols-2 gap-2">
                     {[{ label: "Joined", val: joinedCount }, { label: "Total", val: communities.length }].map(s => (
                       <div key={s.label} className="bg-slate-50 rounded-xl py-2 text-center">
-                        <div className="text-[10px] text-slate-400">{s.label}</div>
-                        <div className="text-sm font-black text-[#0a1628]">{s.val}</div>
+                        <div className="text-xs text-slate-400">{s.label}</div>
+                        <div className="text-base font-black text-[#0a1628]">{s.val}</div>
                       </div>
                     ))}
                   </div>
@@ -349,26 +349,26 @@ export default function CommunitiesPage() {
 
             {isAdmin ? (
               <button onClick={() => setShowCreate(true)}
-                className="flex items-center justify-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-4 py-3 rounded-xl hover:bg-[#1a3a6b] transition-all w-full">
+                className="flex items-center justify-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-4 rounded-xl hover:bg-[#1a3a6b] transition-all w-full">
                 <Plus className="w-4 h-4" /> Create Community
               </button>
             ) : !user ? (
               <Link href="/login"
-                className="flex items-center justify-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-4 py-3 rounded-xl hover:bg-[#1a3a6b] transition-all w-full">
+                className="flex items-center justify-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-4 rounded-xl hover:bg-[#1a3a6b] transition-all w-full">
                 <UserCircleIcon className="w-4 h-4" /> Sign In to Join
               </Link>
             ) : null}
 
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 space-y-2.5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Platform Stats</p>
+            <div className="bg-white rounded-2xl p-5 border border-slate-100 space-y-3">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Platform Stats</p>
               {[
                 { label: "Communities", value: communities.length },
                 { label: "Members",     value: communities.reduce((a, c) => a + (c.memberCount ?? 0), 0).toLocaleString() },
                 { label: "Discussions", value: communities.reduce((a, c) => a + (c._count?.posts ?? 0), 0).toLocaleString() },
               ].map(s => (
-                <div key={s.label} className="flex items-center justify-between border-t border-slate-50 pt-2">
-                  <span className="text-slate-400 text-xs">{s.label}</span>
-                  <span className="font-black text-[#0a1628] text-sm">{s.value}</span>
+                <div key={s.label} className="flex items-center justify-between border-t border-slate-50 pt-3">
+                  <span className="text-slate-400 text-sm">{s.label}</span>
+                  <span className="font-black text-[#0a1628] text-base">{s.value}</span>
                 </div>
               ))}
             </div>
@@ -380,8 +380,8 @@ export default function CommunitiesPage() {
             {/* Header */}
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-black text-[#0a1628]">Communities</h1>
-                <p className="text-slate-400 text-sm mt-0.5">
+                <h1 className="text-3xl font-black text-[#0a1628]">Communities</h1>
+                <p className="text-slate-400 text-base mt-0.5">
                   {loading ? "Loading…" : `${filtered.length} communit${filtered.length !== 1 ? "ies" : "y"}`}
                 </p>
               </div>
@@ -405,11 +405,11 @@ export default function CommunitiesPage() {
             </div>
 
             {/* Search */}
-            <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3">
+            <div className="bg-white rounded-xl border border-slate-200 px-4 py-3.5 flex items-center gap-3">
               <Search className="w-4 h-4 text-slate-400 shrink-0" />
               <input type="text" placeholder="Search communities…"
                 value={search} onChange={e => setSearch(e.target.value)}
-                className="flex-1 bg-transparent font-[inherit] text-sm text-slate-700 outline-none placeholder-slate-400" />
+                className="flex-1 bg-transparent font-[inherit] text-base text-slate-700 outline-none placeholder-slate-400" />
               {search && (
                 <button onClick={() => { setSearch(""); setQuery(""); }} className="text-slate-400 hover:text-slate-600 text-xs font-semibold">Clear</button>
               )}
@@ -419,7 +419,7 @@ export default function CommunitiesPage() {
             <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1">
               {TABS.map(t => (
                 <button key={t.key} onClick={() => setTab(t.key)}
-                  className={`flex-1 text-xs font-bold py-2 rounded-lg transition-all ${tab === t.key ? "bg-[#0a1628] text-white shadow-sm" : "text-slate-500 hover:text-[#0a1628]"}`}>
+                  className={`flex-1 text-sm font-bold py-2.5 rounded-lg transition-all ${tab === t.key ? "bg-[#0a1628] text-white shadow-sm" : "text-slate-500 hover:text-[#0a1628]"}`}>
                   {t.label}
                 </button>
               ))}

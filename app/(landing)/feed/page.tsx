@@ -97,9 +97,9 @@ export default function FeedPage() {
     setPosts(prev => prev.filter(p => p.id !== id));
 
   return (
-    <div className="min-h-screen bg-slate-100 pt-4 pb-12">
-      <div className="max-w-[1200px] mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-5">
+    <div className="min-h-screen bg-slate-100 pt-5 pb-12">
+      <div className="max-w-[1320px] mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr_300px] gap-6">
 
           {/* LEFT — profile panel */}
           <div className="hidden lg:block self-start sticky top-[100px] h-fit max-h-[calc(100vh-100px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -122,10 +122,10 @@ export default function FeedPage() {
             {loading ? (
               <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 text-[#d4a017] animate-spin" /></div>
             ) : posts.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
-                <div className="text-4xl mb-4">📝</div>
-                <h3 className="font-black text-[#0a1628] text-lg mb-2">Nothing in the feed yet</h3>
-                <p className="text-slate-400 text-sm">Be the first to share a tax insight with the community!</p>
+              <div className="bg-white border border-slate-200 rounded-2xl p-14 text-center">
+                <div className="text-5xl mb-4">📝</div>
+                <h3 className="font-black text-[#0a1628] text-xl mb-2">Nothing in the feed yet</h3>
+                <p className="text-slate-400 text-base">Be the first to share a tax insight with the community!</p>
               </div>
             ) : (
               <>

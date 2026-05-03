@@ -150,24 +150,24 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
       <div className="bg-white rounded-2xl overflow-hidden transition-all">
       {/* Header */}
       <div className="flex items-start gap-3 p-5 pb-3">
-        <div className="w-11 h-11 rounded-full bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-12 h-12 rounded-full bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
           {post.author.image
             ? <img src={post.author.image} alt={post.author.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-            : <span className="text-white font-bold">{post.author.name?.[0]?.toUpperCase()}</span>}
+            : <span className="text-white font-bold text-base">{post.author.name?.[0]?.toUpperCase()}</span>}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-[#0a1628] text-sm">{post.author.name}</span>
+            <span className="font-bold text-[#0a1628] text-base">{post.author.name}</span>
             {post.author.tier !== "FREE" && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${tierBadge[post.author.tier] ?? ""}`}>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${tierBadge[post.author.tier] ?? ""}`}>
                 {post.author.tier === "MARKETPLACE_PLUS" ? "Plus" : post.author.tier === "MARKETPLACE" ? "Market" : post.author.tier}
               </span>
             )}
           </div>
           {post.author.headline && (
-            <div className="text-xs text-slate-400 truncate mt-0.5">{post.author.headline}</div>
+            <div className="text-sm text-slate-400 truncate mt-0.5">{post.author.headline}</div>
           )}
-          <div className="text-xs text-slate-400 mt-0.5">{timeAgo(post.createdAt)}</div>
+          <div className="text-sm text-slate-400 mt-0.5">{timeAgo(post.createdAt)}</div>
         </div>
         {/* Three-dot menu for own posts */}
         {isOwn && (
@@ -214,7 +214,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
           </div>
         ) : (
           <>
-            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{displayText}</p>
+            <p className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap">{displayText}</p>
             {isLong && (
               <button onClick={() => setExpanded(e => !e)} className="text-xs font-semibold text-[#0a1628] mt-1 hover:underline">
                 {expanded ? "Show less" : "…see more"}
@@ -262,7 +262,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
 
       {/* Like / Comment counts */}
       {(likeCount > 0 || commentCount > 0) && (
-        <div className="px-5 py-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
+        <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between text-sm font-medium text-slate-500">
           {likeCount > 0 && <span className="flex items-center gap-1.5"><ThumbsUpIcon className="w-3.5 h-3.5" /> {likeCount}</span>}
           {commentCount > 0 && (
             <button onClick={handleToggleComments} className="hover:text-[#0a1628] transition-colors">
@@ -297,14 +297,14 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
             <div className="space-y-3">
               {comments.map(c => (
                 <div key={c.id} className="flex items-start gap-2.5">
-                  <div className="w-7 h-7 rounded-full bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
                     {c.author.image
                       ? <img src={c.author.image} alt={c.author.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                      : <span className="text-white text-[10px] font-bold">{c.author.name?.[0]?.toUpperCase()}</span>}
+                      : <span className="text-white text-xs font-bold">{c.author.name?.[0]?.toUpperCase()}</span>}
                   </div>
                   <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                    <div className="text-xs font-bold text-[#0a1628]">{c.author.name}</div>
-                    <div className="text-xs text-slate-600 mt-0.5 leading-relaxed">{c.content}</div>
+                    <div className="text-sm font-bold text-[#0a1628]">{c.author.name}</div>
+                    <div className="text-sm text-slate-600 mt-0.5 leading-relaxed">{c.content}</div>
                   </div>
                 </div>
               ))}
@@ -323,7 +323,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
                 type="text" placeholder="Add a comment…" value={commentText}
                 onChange={e => setCommentText(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") handleAddComment(); }}
-                className="flex-1 font-[inherit] text-xs outline-none bg-transparent text-slate-700 placeholder-slate-400"
+              className="flex-1 font-[inherit] text-sm outline-none bg-transparent text-slate-700 placeholder-slate-400"
               />
                 <button onClick={handleAddComment} disabled={!commentText.trim() || postingComment}
                   className="w-8 h-8 rounded-full bg-[#0a1628] flex items-center justify-center text-white hover:bg-[#1a3a6b] transition-colors disabled:opacity-30">

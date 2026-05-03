@@ -140,10 +140,10 @@ function ListCard({ l, authed }: { l: Listing; authed: boolean }) {
 
         {/* Title + desc */}
         <div>
-          <h3 className="font-black text-[#0a1628] text-sm leading-snug line-clamp-1 group-hover:text-[#1a3a6b] transition-colors">
+          <h3 className="font-black text-[#0a1628] text-base leading-snug line-clamp-1 group-hover:text-[#1a3a6b] transition-colors">
             {l.title}
           </h3>
-          <p className="text-xs text-slate-400 leading-relaxed line-clamp-2 mt-0.5">{l.description}</p>
+          <p className="text-sm text-slate-400 leading-relaxed line-clamp-2 mt-0.5">{l.description}</p>
         </div>
 
         {/* Bottom: tags + seller + views + cta */}
@@ -160,12 +160,12 @@ function ListCard({ l, authed }: { l: Listing; authed: boolean }) {
                   ? <img src={l.user.image} alt={l.user.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   : <span className="text-white font-bold text-[9px]">{l.user.name?.[0]?.toUpperCase()}</span>}
               </div>
-              <span className="text-[11px] font-semibold text-slate-500 max-w-[70px] truncate hidden sm:block">{l.user.name}</span>
+              <span className="text-xs font-semibold text-slate-500 max-w-[80px] truncate hidden sm:block">{l.user.name}</span>
             </div>
             <span className="flex items-center gap-0.5 text-[10px] text-slate-300">
               <EyeIcon className="w-3 h-3" />{l.viewCount}
             </span>
-            <span className="flex items-center gap-0.5 text-[11px] font-bold text-[#0a1628] group-hover:gap-1 transition-all">
+            <span className="flex items-center gap-0.5 text-xs font-bold text-[#0a1628] group-hover:gap-1 transition-all">
               View <ArrowRight01Icon className="w-3 h-3" />
             </span>
           </div>
@@ -208,7 +208,7 @@ function GridCard({ l, authed }: { l: Listing; authed: boolean }) {
       {/* Content */}
       <div className="p-4 flex flex-col gap-2 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-black text-[#0a1628] text-sm leading-snug line-clamp-2 group-hover:text-[#1a3a6b] transition-colors flex-1">
+          <h3 className="font-black text-[#0a1628] text-base leading-snug line-clamp-2 group-hover:text-[#1a3a6b] transition-colors flex-1">
             {l.title}
           </h3>
           <span className="text-lg font-black text-[#0a1628] shrink-0 tabular-nums">
@@ -216,7 +216,7 @@ function GridCard({ l, authed }: { l: Listing; authed: boolean }) {
           </span>
         </div>
 
-        <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">{l.description}</p>
+        <p className="text-sm text-slate-400 leading-relaxed line-clamp-2">{l.description}</p>
 
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50">
           <div className="flex items-center gap-1.5">
@@ -225,7 +225,7 @@ function GridCard({ l, authed }: { l: Listing; authed: boolean }) {
                 ? <img src={l.user.image} alt={l.user.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                 : <span className="text-white font-bold text-[9px]">{l.user.name?.[0]?.toUpperCase()}</span>}
             </div>
-            <span className="text-[10px] font-semibold text-slate-400 max-w-[80px] truncate">{l.user.name}</span>
+            <span className="text-xs font-semibold text-slate-400 max-w-[90px] truncate">{l.user.name}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-0.5 text-[10px] text-slate-300">
@@ -264,10 +264,10 @@ function MarketplaceSidebar({
             </div>
           </div>
           <div className="px-4 pt-12 pb-4">
-            <div className="font-black text-[#0a1628] text-sm">{user.name}</div>
+            <div className="font-black text-[#0a1628] text-base">{user.name}</div>
             {user.headline
-              ? <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">{user.headline}</div>
-              : <div className="text-xs text-slate-400 italic mt-0.5">No headline</div>}
+              ? <div className="text-sm text-slate-500 mt-0.5 line-clamp-2">{user.headline}</div>
+              : <div className="text-sm text-slate-400 italic mt-0.5">No headline</div>}
           </div>
         </div>
       )}
@@ -290,7 +290,7 @@ function MarketplaceSidebar({
       )}
 
       <div className="bg-white rounded-2xl p-3">
-        <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 px-2">Browse By</p>
+        <p className="text-sm font-black uppercase tracking-widest text-slate-400 mb-2 px-2">Browse By</p>
         <div className="space-y-0.5">
           {CATS.map(c => {
             const cfg  = c === "ALL" ? null : CAT_CONFIG[c];
@@ -373,8 +373,8 @@ function MarketplaceContent() {
 
   return (
     <div className="min-h-screen bg-[#f4f6fb] pt-4 pb-12">
-      <div className="max-w-[1200px] mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 items-start">
+      <div className="max-w-[1320px] mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
 
           {/* Sidebar */}
           <div className="hidden lg:block self-start sticky top-[100px] h-fit max-h-[calc(100vh-100px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -390,8 +390,8 @@ function MarketplaceContent() {
             {/* Header */}
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-black text-[#0a1628]">Marketplace</h1>
-                <p className="text-slate-400 text-sm mt-0.5">
+                <h1 className="text-3xl font-black text-[#0a1628]">Marketplace</h1>
+                <p className="text-slate-400 text-base mt-0.5">
                   {listings.length > 0
                     ? <>{listings.length} listing{listings.length !== 1 ? "s" : ""}{loading && <span className="inline-block w-1.5 h-1.5 bg-slate-400 rounded-full animate-pulse ml-1.5 align-middle" />}</>
                     : loading ? "Loading…" : "No listings"}
@@ -421,11 +421,11 @@ function MarketplaceContent() {
             </div>
 
             {/* Search */}
-            <div className="bg-white rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="bg-white rounded-xl px-4 py-3.5 flex items-center gap-3">
               <Search01Icon className="w-4 h-4 text-slate-400 shrink-0" />
               <input type="text" placeholder="Search services, products, trainers…"
                 value={search} onChange={e => dispatch({ type: "SET_SEARCH", payload: e.target.value })}
-                className="flex-1 bg-transparent font-[inherit] text-sm text-slate-700 outline-none placeholder-slate-400" />
+                className="flex-1 bg-transparent font-[inherit] text-base text-slate-700 outline-none placeholder-slate-400" />
               {search && (
                 <button onClick={() => dispatch({ type: "CLEAR_SEARCH" })}
                   className="text-slate-400 hover:text-slate-600 transition-colors">

@@ -286,7 +286,7 @@ function ProMarketingContent() {
             <span className="text-[#f0c040] text-sm font-bold uppercase tracking-widest">Pro Marketing</span>
           </div>
           <h1 className="text-4xl font-black mb-2">Pro Marketing</h1>
-          <p className="text-white/60 max-w-xl">Grow your reach with message blasts and display advertising. Marketplace Plus exclusive.</p>
+          <p className="text-white/60 text-base max-w-xl">Grow your reach with message blasts and display advertising. Marketplace Plus exclusive.</p>
           {/* ── Main Tabs ── */}
           <div className="mt-8 grid grid-cols-3 gap-3">
             {([
@@ -298,12 +298,12 @@ function ProMarketingContent() {
               const active = mainTab === t.key;
               return (
                 <button key={t.key} onClick={() => setMainTab(t.key)}
-                  className={`flex flex-col items-start gap-1 px-5 py-4 rounded-2xl font-bold text-sm transition-all ${
+                  className={`flex flex-col items-start gap-1 px-5 py-4 rounded-2xl font-bold text-base transition-all ${
                     active ? "bg-[#f0c040] text-[#0a1628]" : "bg-white/10 text-white hover:bg-white/20"
                   }`}>
                   <Icon className="w-5 h-5 mb-0.5" />
-                  <span className="font-black text-sm">{t.label}</span>
-                  <span className={`text-[11px] font-normal leading-tight ${active ? "text-[#0a1628]/60" : "text-white/50"}`}>{t.sub}</span>
+                  <span className="font-black text-base">{t.label}</span>
+                  <span className={`text-xs font-normal leading-tight ${active ? "text-[#0a1628]/60" : "text-white/50"}`}>{t.sub}</span>
                 </button>
               );
             })}
@@ -518,9 +518,9 @@ function ProMarketingContent() {
                 return (
                   <div key={b.id} className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:border-slate-200 transition-all">
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[#0a1628] text-sm truncate">{b.subject}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{b.recipientCount.toLocaleString()} recipients · ${b.priceUsd} · {new Date(b.createdAt).toLocaleDateString()}</p>
-                      {b.rejectionReason && <p className="text-xs text-red-500 mt-0.5">Reason: {b.rejectionReason}</p>}
+                      <p className="font-bold text-[#0a1628] text-base truncate">{b.subject}</p>
+                      <p className="text-sm text-slate-400 mt-0.5">{b.recipientCount.toLocaleString()} recipients · ${b.priceUsd} · {new Date(b.createdAt).toLocaleDateString()}</p>
+                      {b.rejectionReason && <p className="text-sm text-red-500 mt-0.5">Reason: {b.rejectionReason}</p>}
                     </div>
                     <span className={`flex items-center gap-1.5 text-xs font-semibold border px-3 py-1 rounded-full ${s.color}`}>
                       <Icon className="w-3 h-3" />{s.label}
@@ -731,12 +731,12 @@ function ProMarketingContent() {
                   return (
                     <div key={ad.id} className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:border-slate-200 transition-all">
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-[#0a1628] text-sm truncate">{ad.title}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="font-bold text-[#0a1628] text-base truncate">{ad.title}</p>
+                        <p className="text-sm text-slate-400 mt-0.5">
                           {ad.placement === "CENTER_COLUMN" ? "Center Column" : "Left Column"} · {ad.durationMonths} mo · ${ad.priceUsd} · {new Date(ad.createdAt).toLocaleDateString()}
                         </p>
-                        {ad.endsAt && <p className="text-xs text-slate-400">Ends {new Date(ad.endsAt).toLocaleDateString()}</p>}
-                        {ad.rejectionReason && <p className="text-xs text-red-500 mt-0.5">Reason: {ad.rejectionReason}</p>}
+                        {ad.endsAt && <p className="text-sm text-slate-400">Ends {new Date(ad.endsAt).toLocaleDateString()}</p>}
+                        {ad.rejectionReason && <p className="text-sm text-red-500 mt-0.5">Reason: {ad.rejectionReason}</p>}
                       </div>
                       <span className={`flex items-center gap-1.5 text-xs font-semibold border px-3 py-1 rounded-full ${s.color}`}>
                         <Icon className="w-3 h-3" />{s.label}

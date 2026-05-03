@@ -38,7 +38,7 @@ function ToolkitCard({ tk }: { tk: Toolkit }) {
         <div className="w-48 h-48 mb-4 flex items-center justify-center overflow-hidden">
           <img src={tk.badgeImage} alt={tk.name} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110" />
         </div>
-        <h3 className="font-black text-sm text-[#0a1628] uppercase tracking-wide text-center leading-tight mb-2 transition-colors duration-200 group-hover:text-[#1a3a6b]">
+        <h3 className="font-black text-base text-[#0a1628] uppercase tracking-wide text-center leading-tight mb-2 transition-colors duration-200 group-hover:text-[#1a3a6b]">
           {tk.name}
         </h3>
         <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-full">
@@ -49,9 +49,9 @@ function ToolkitCard({ tk }: { tk: Toolkit }) {
 
       {/* Features */}
       <div className="flex-1 px-5 py-4 bg-white">
-        <ul className="space-y-2">
+        <ul className="space-y-2.5">
           {tk.features.map(f => (
-            <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+            <li key={f} className="flex items-start gap-2 text-base text-slate-600">
               <Check className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />{f}
             </li>
           ))}
@@ -130,9 +130,9 @@ function BundleCard({ bundle }: { bundle: Bundle }) {
 
       {/* Features */}
       <div className="flex-1 px-5 py-4 bg-white">
-        <ul className="space-y-2 mb-3">
+        <ul className="space-y-2.5 mb-3">
           {bundle.features.map(f => (
-            <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+            <li key={f} className="flex items-start gap-2 text-base text-slate-600">
               <Check className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />{f}
             </li>
           ))}
@@ -144,7 +144,7 @@ function BundleCard({ bundle }: { bundle: Bundle }) {
             </div>
             <ul className="space-y-2">
               {bundle.highlightFeatures.map(f => (
-                <li key={f} className="flex items-start gap-2 text-sm font-bold text-[#0a1628]">
+                <li key={f} className="flex items-start gap-2 text-base font-bold text-[#0a1628]">
                   <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400 mt-0.5 shrink-0" />{f}
                 </li>
               ))}
@@ -240,7 +240,7 @@ export default function ToolkitsPage() {
 
         {/* Individual Toolkits — 3 top row, 2 centred bottom row */}
         <section>
-          <h2 className="text-xl font-black text-[#0a1628] mb-6 flex items-center gap-2">
+          <h2 className="text-2xl font-black text-[#0a1628] mb-6 flex items-center gap-2">
             <span className="w-1 h-5 bg-[#0a1628] rounded-full" /> Individual Toolkits
           </h2>
           <div className="grid md:grid-cols-3 gap-5 mb-5">
@@ -258,7 +258,7 @@ export default function ToolkitsPage() {
               <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" /> Best Value Bundles
             </div>
             <h2 className="text-3xl font-black text-[#0a1628]">Bundle &amp; Save Big</h2>
-            <p className="text-slate-500 mt-1 text-sm">Get everything you need at a massive discount</p>
+            <p className="text-slate-500 mt-1 text-base">Get everything you need at a massive discount</p>
           </div>
           <div className="grid md:grid-cols-2 gap-5">
             {BUNDLES.map(b => <BundleCard key={b.id} bundle={b} />)}
@@ -274,7 +274,7 @@ export default function ToolkitsPage() {
           ].map(f => (
             <div key={f.title} className="flex items-start gap-3">
               <span className="text-2xl shrink-0">{f.icon}</span>
-              <div><p className="font-bold text-sm">{f.title}</p><p className="text-white/50 text-xs mt-0.5">{f.desc}</p></div>
+              <div><p className="font-bold text-base">{f.title}</p><p className="text-white/50 text-sm mt-0.5">{f.desc}</p></div>
             </div>
           ))}
         </div>
