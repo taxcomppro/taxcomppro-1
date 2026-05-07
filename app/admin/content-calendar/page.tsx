@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+
 import {
   Loader2, ChevronLeft, ChevronRight, Calendar,
   List, Trash2, Zap, Clock, ImageIcon, Video,
@@ -115,36 +116,132 @@ function PostPill({ post, onDelete, onPublish }: {
 }
 
 function CreatePostModal({ defaultDate, onClose, onCreated }: {
-  defaultDate: string; // ISO date string "YYYY-MM-DD"
+  defaultDate: string;
   onClose: () => void;
   onCreated: (post: ScheduledPost) => void;
 }) {
-  const [content,   setContent]   = useState("");
-  const [time,      setTime]      = useState("12:00");
-  const [submitting,setSubmitting] = useState(false);
-  const [error,     setError]     = useState("");
+  const [content,    setContent]    = useState("");
+  const [time,       setTime]       = useState("12:00");
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading,  setUploading]  = useState(false);
+  const [error,      setError]      = useState("");
+
+  // Image state
+  const [previews, setPreviews] = useState<{ file: File; url: string }[]>([]);
+  const imageRef = useRef<HTMLInputElement>(null);
+
+  // Video state
+  const [video,      setVideo]      = useState<{ file: File; url: string } | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
 
   const scheduledAt = `${defaultDate}T${time}`;
 
+  /* ── image handlers ── */
+  const handleImages = (files: FileList | null) => {
+    if (!files) return;
+    const remaining = 4 - previews.length;
+    Array.from(files).slice(0, remaining).forEach(file => {
+      setPreviews(p => [...p, { file, url: URL.createObjectURL(file) }]);
+    });
+    setVideo(null); // can't mix images and video
+  };
+
+  const removeImage = (idx: number) => {
+    setPreviews(p => {
+      URL.revokeObjectURL(p[idx].url);
+      return p.filter((_, i) => i !== idx);
+    });
+  };
+
+  /* ── video handlers ── */
+  const handleVideo = (files: FileList | null) => {
+    setVideoError(null);
+    if (!files || !files[0]) return;
+    const file = files[0];
+    if (!file.type.startsWith("video/")) { setVideoError("Only video files are allowed."); return; }
+    const url = URL.createObjectURL(file);
+    const el  = document.createElement("video");
+    el.preload = "metadata";
+    el.onloadedmetadata = () => {
+      if (el.duration > 60) {
+        setVideoError(`Video must be 60 seconds or less.`);
+        URL.revokeObjectURL(url);
+      } else {
+        setPreviews([]); // can't mix images and video
+        setVideo({ file, url });
+      }
+      URL.revokeObjectURL(el.src);
+    };
+    el.src = url;
+  };
+
+  const removeVideo = () => {
+    if (video) URL.revokeObjectURL(video.url);
+    setVideo(null);
+    setVideoError(null);
+    if (videoRef.current) videoRef.current.value = "";
+  };
+
+  const hasMedia = previews.length > 0 || !!video;
+
   const submit = async () => {
-    if (!content.trim()) { setError("Post content is required."); return; }
+    if (!content.trim() && !hasMedia) { setError("Add content, an image, or a video."); return; }
     const dt = new Date(scheduledAt);
     if (dt <= new Date(Date.now() + 60_000)) { setError("Must be at least 1 minute in the future."); return; }
     setError(""); setSubmitting(true);
-    const res = await fetch("/api/feed", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: content.trim(), images: [], videoUrl: null, scheduledAt: dt.toISOString() }),
-    });
-    if (res.ok) {
-      const post = await res.json();
-      onCreated(post);
-      onClose();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setError((d as {error?: string}).error ?? "Failed to schedule post.");
-    }
-    setSubmitting(false);
+    try {
+      let imageUrls: string[] = [];
+      let videoUrl: string | null = null;
+
+      /* upload images */
+      if (previews.length > 0) {
+        setUploading(true);
+        const fd = new FormData();
+        previews.forEach(p => fd.append("files", p.file));
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        setUploading(false);
+        if (!res.ok) { setError("Image upload failed."); return; }
+        const data = await res.json() as { urls: string[] };
+        imageUrls = data.urls;
+      }
+
+      /* upload video via signed ticket */
+      if (video) {
+        setUploading(true);
+        const ticketRes = await fetch("/api/upload-video");
+        if (!ticketRes.ok) { setError("Could not get upload token."); setUploading(false); return; }
+        const { timestamp, signature, folder, apiKey, cloudName } =
+          await ticketRes.json() as { timestamp: number; signature: string; folder: string; apiKey: string; cloudName: string };
+        const fd = new FormData();
+        fd.append("file",      video.file);
+        fd.append("timestamp", String(timestamp));
+        fd.append("signature", signature);
+        fd.append("api_key",   apiKey);
+        fd.append("folder",    folder);
+        const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, { method: "POST", body: fd });
+        setUploading(false);
+        if (!uploadRes.ok) { setError("Video upload failed."); return; }
+        const data = await uploadRes.json() as { secure_url: string };
+        videoUrl = data.secure_url;
+      }
+
+      const res = await fetch("/api/feed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: content.trim(), images: imageUrls, videoUrl, scheduledAt: dt.toISOString() }),
+      });
+
+      if (res.ok) {
+        const post = await res.json();
+        onCreated(post);
+        onClose();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setError((d as { error?: string }).error ?? "Failed to schedule post.");
+      }
+    } catch { setError("Something went wrong. Please try again."); }
+    finally { setSubmitting(false); setUploading(false); }
   };
 
   return (
@@ -154,47 +251,105 @@ function CreatePostModal({ defaultDate, onClose, onCreated }: {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="font-black text-[#0a1628] text-lg">Schedule a Post</h2>
-            <p className="text-slate-400 text-xs mt-0.5">Posting as Admin · {new Date(defaultDate).toLocaleDateString([], { weekday:"long", month:"long", day:"numeric" })}</p>
+            <p className="text-slate-400 text-xs mt-0.5">Posting as Admin · {new Date(defaultDate).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-all text-slate-400">
             <X className="w-4 h-4" />
           </button>
         </div>
+
         {/* Body */}
         <div className="px-6 py-4 space-y-4">
+          {/* Text area */}
           <textarea
             value={content} onChange={e => { setContent(e.target.value); setError(""); }}
             placeholder="Write a tax insight, update, or announcement…"
-            rows={5}
+            rows={4}
             className="w-full text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 resize-none outline-none focus:border-[#0a1628] focus:ring-2 focus:ring-[#0a1628]/10 transition-all font-[inherit]"
           />
+
+          {/* Image previews */}
+          {previews.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {previews.map((p, i) => (
+                <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                  <img src={p.url} alt="" className="w-full h-full object-cover" />
+                  <button onClick={() => removeImage(i)}
+                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80 transition-all">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              {previews.length < 4 && (
+                <button onClick={() => imageRef.current?.click()}
+                  className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:border-[#0a1628] hover:text-[#0a1628] transition-all">
+                  <Plus className="w-6 h-6" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Video preview */}
+          {video && (
+            <div className="relative rounded-xl overflow-hidden bg-black">
+              <video src={video.url} controls className="w-full max-h-48 object-contain" />
+              <button onClick={removeVideo}
+                className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80 transition-all">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          {videoError && <p className="text-xs text-red-500">{videoError}</p>}
+
+          {/* Media toolbar */}
+          <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+            <input ref={imageRef} type="file" accept="image/*" multiple className="hidden"
+              onChange={e => { handleImages(e.target.files); e.target.value = ""; }} />
+            <input ref={videoRef} type="file" accept="video/*" className="hidden"
+              onChange={e => { handleVideo(e.target.files); e.target.value = ""; }} />
+            <button onClick={() => imageRef.current?.click()} disabled={!!video || previews.length >= 4}
+              className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#0a1628] hover:bg-slate-100 px-3 py-2 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+              <ImageIcon className="w-4 h-4 text-blue-500" />
+              {previews.length > 0 ? `${previews.length}/4 images` : "Add Images"}
+            </button>
+            <button onClick={() => videoRef.current?.click()} disabled={previews.length > 0 || !!video}
+              className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#0a1628] hover:bg-slate-100 px-3 py-2 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+              <Video className="w-4 h-4 text-purple-500" />
+              {video ? "1 video" : "Add Video"}
+            </button>
+            <span className="text-[10px] text-slate-300 ml-1">Images and video are mutually exclusive</span>
+          </div>
+
           {/* Time picker */}
           <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
             <Clock className="w-4 h-4 text-blue-600 shrink-0" />
             <div className="flex-1">
-              <div className="text-xs font-bold text-blue-800 mb-1">Publish time on {new Date(defaultDate + "T12:00").toLocaleDateString([], { month:"short", day:"numeric" })}</div>
+              <div className="text-xs font-bold text-blue-800 mb-1">Publish time on {new Date(defaultDate + "T12:00").toLocaleDateString([], { month: "short", day: "numeric" })}</div>
               <input type="time" value={time} onChange={e => setTime(e.target.value)}
                 className="text-sm font-bold text-[#0a1628] bg-transparent outline-none border-none" />
             </div>
             <div className="text-[11px] text-blue-600 font-semibold">
-              {new Date(scheduledAt).toLocaleString([], { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" })}
+              {new Date(scheduledAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
             </div>
           </div>
+
           {error && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>}
         </div>
+
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
           <button onClick={onClose} className="text-sm font-semibold text-slate-400 hover:text-slate-600 px-4 py-2 rounded-xl hover:bg-slate-100 transition-all">Cancel</button>
-          <button onClick={submit} disabled={submitting || !content.trim()}
+          <button onClick={submit} disabled={submitting || uploading || (!content.trim() && !hasMedia)}
             className="flex items-center gap-2 bg-[#0a1628] text-white font-black text-sm px-6 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all disabled:opacity-40">
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
-            {submitting ? "Scheduling…" : "Schedule Post"}
+            {(submitting || uploading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
+            {uploading ? "Uploading…" : submitting ? "Scheduling…" : "Schedule Post"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 export default function AdminContentCalendarPage() {
   const now = new Date();

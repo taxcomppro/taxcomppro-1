@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
 import Image from "next/image";
 import {
-  LayoutDashboard, CheckSquare, BarChart2, BookOpen, Gift, Bot, Calendar,
+  LayoutDashboard, CheckSquare, BarChart2, BookOpen, Gift, Bot, Calendar, Images,
 } from "lucide-react";
 
 type NavLink = { icon: React.ElementType; label: string; href: string; exact?: boolean };
@@ -33,6 +33,7 @@ const adminLinks: NavLink[] = [
   { icon: BookOpen,        label: "Courses",             href: "/admin/courses" },
   { icon: BarChart2,       label: "Analytics",           href: "/admin/analytics" },
   { icon: Calendar,        label: "Content Calendar",    href: "/admin/content-calendar" },
+  { icon: Images,          label: "Media Gallery",       href: "/admin/media-gallery" },
   { icon: Gift,            label: "Affiliate",           href: "/admin/affiliate" },
   { icon: Bot,             label: "Atlas AI",            href: "/admin/atlas" },
 ];
@@ -50,7 +51,8 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-slate-100">
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo.png" alt="TaxComPro" width={120} height={36} className="object-contain" priority />
+          <Image src="/logo.png"      alt="TaxComPro" width={120} height={36} className="object-contain dark:hidden" priority />
+          <Image src="/logo_dark.png" alt="TaxComPro" width={120} height={36} className="object-contain hidden dark:block" priority />
         </Link>
       </div>
 

@@ -19,7 +19,7 @@ function ToolkitCard({ tk }: { tk: Toolkit }) {
   const [agreed,  setAgreed]  = useState(false);
 
   const buy = async () => {
-    if (!user) { router.push("/login"); return; }
+    if (!user) { router.push("/login?next=/toolkits"); return; }
     if (!agreed) return;
     setLoading(true);
     const res  = await fetch("/api/stripe/toolkit-checkout", {
@@ -58,8 +58,7 @@ function ToolkitCard({ tk }: { tk: Toolkit }) {
         </ul>
       </div>
 
-      {/* Price + CTA */}
-      {user ? (
+      {/* Price + CTA — visible to all; guests redirected to login on buy */}
       <div className="px-5 pb-5 pt-4 bg-white border-t border-slate-100">
         <div className="text-center mb-3">
           <span className="text-4xl font-black text-[#0a1628]">${tk.price}</span>
@@ -67,28 +66,35 @@ function ToolkitCard({ tk }: { tk: Toolkit }) {
             + {tierLabel(tk.membershipTier, tk.membershipMonths)}
           </p>
         </div>
-        <label className="flex items-start gap-2 mb-3 cursor-pointer">
-          <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
-            className="mt-0.5 rounded w-3.5 h-3.5 shrink-0 accent-[#0a1628] cursor-pointer" />
-          <span className="text-[10px] text-slate-400">
-            I accept the <a href="/terms" className="underline text-[#0a1628]" target="_blank">Terms of Service</a>
-          </span>
-        </label>
-        <button onClick={buy} disabled={loading || !agreed}
-          className={`w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide transition-all duration-200 ${
-            agreed ? "bg-[#0a1628] hover:bg-[#1a3a6b] text-white hover:scale-[1.02] active:scale-[0.98]" : "bg-slate-100 text-slate-400 cursor-not-allowed"
-          }`}>
-          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : agreed ? <Zap className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-          {loading ? "Redirecting…" : "Buy Now"}
-        </button>
+        {user ? (
+          <>
+            <label className="flex items-start gap-2 mb-3 cursor-pointer">
+              <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+                className="mt-0.5 rounded w-3.5 h-3.5 shrink-0 accent-[#0a1628] cursor-pointer" />
+              <span className="text-[10px] text-slate-400">
+                I accept the <a href="/terms" className="underline text-[#0a1628]" target="_blank">Terms of Service</a>
+              </span>
+            </label>
+            <button onClick={buy} disabled={loading || !agreed}
+              className={`w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide transition-all duration-200 ${
+                agreed ? "bg-[#0a1628] hover:bg-[#1a3a6b] text-white hover:scale-[1.02] active:scale-[0.98]" : "bg-slate-100 text-slate-400 cursor-not-allowed"
+              }`}>
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : agreed ? <Zap className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+              {loading ? "Redirecting…" : "Buy Now"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={buy}
+              className="w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide bg-[#0a1628] hover:bg-[#1a3a6b] text-white hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+              <Zap className="w-3.5 h-3.5" /> Buy Now
+            </button>
+            <p className="text-[10px] text-center text-slate-400 mt-1.5 flex items-center justify-center gap-1">
+              <Lock className="w-3 h-3" /> Sign in required to complete purchase
+            </p>
+          </>
+        )}
       </div>
-      ) : (
-      <div className="px-5 pb-5 pt-4 bg-white border-t border-slate-100">
-        <a href="/login" className="w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide bg-slate-100 text-slate-500 hover:bg-[#0a1628] hover:text-white transition-all duration-200">
-          <Lock className="w-3.5 h-3.5" /> Sign In to See Pricing
-        </a>
-      </div>
-      )}
     </div>
   );
 }
@@ -103,7 +109,7 @@ function BundleCard({ bundle }: { bundle: Bundle }) {
   const savings = bundle.originalPrice - bundle.price;
 
   const buy = async () => {
-    if (!user) { router.push("/login"); return; }
+    if (!user) { router.push("/login?next=/toolkits"); return; }
     if (!agreed) return;
     setLoading(true);
     const res  = await fetch("/api/stripe/bundle-checkout", {
@@ -161,8 +167,7 @@ function BundleCard({ bundle }: { bundle: Bundle }) {
         )}
       </div>
 
-      {/* Price + CTA */}
-      {user ? (
+      {/* Price + CTA — visible to all; guests redirected to login on buy */}
       <div className="px-5 pb-5 pt-4 bg-white border-t border-slate-100">
         <div className="text-center mb-3">
           <p className="text-slate-400 line-through text-base font-semibold">${bundle.originalPrice.toLocaleString()}</p>
@@ -170,30 +175,39 @@ function BundleCard({ bundle }: { bundle: Bundle }) {
           <p className="text-[10px] text-emerald-600 font-bold mt-0.5">You save ${savings.toLocaleString()}!</p>
           <p className="text-[10px] text-amber-600 font-bold">{bundle.membershipMonths} Months FREE Community Access</p>
         </div>
-        <label className="flex items-start gap-2 mb-3 cursor-pointer">
-          <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
-            className="mt-0.5 rounded w-3.5 h-3.5 shrink-0 accent-[#0a1628] cursor-pointer" />
-          <span className="text-[10px] text-slate-400">
-            I accept the <a href="/terms" className="underline text-[#0a1628]" target="_blank">Terms of Service</a>
-          </span>
-        </label>
-        <button onClick={buy} disabled={loading || !agreed}
-          className={`w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide transition-all duration-200 ${
-            agreed
-              ? isElite ? "bg-[#0a1628] hover:bg-[#1a3a6b] text-white hover:scale-[1.02] active:scale-[0.98]" : "bg-amber-500 hover:bg-amber-600 text-white hover:scale-[1.02] active:scale-[0.98]"
-              : "bg-slate-100 text-slate-400 cursor-not-allowed"
-          }`}>
-          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-          {loading ? "Redirecting…" : "Buy Now!"}
-        </button>
+        {user ? (
+          <>
+            <label className="flex items-start gap-2 mb-3 cursor-pointer">
+              <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+                className="mt-0.5 rounded w-3.5 h-3.5 shrink-0 accent-[#0a1628] cursor-pointer" />
+              <span className="text-[10px] text-slate-400">
+                I accept the <a href="/terms" className="underline text-[#0a1628]" target="_blank">Terms of Service</a>
+              </span>
+            </label>
+            <button onClick={buy} disabled={loading || !agreed}
+              className={`w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide transition-all duration-200 ${
+                agreed
+                  ? isElite ? "bg-[#0a1628] hover:bg-[#1a3a6b] text-white hover:scale-[1.02] active:scale-[0.98]" : "bg-amber-500 hover:bg-amber-600 text-white hover:scale-[1.02] active:scale-[0.98]"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
+              }`}>
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+              {loading ? "Redirecting…" : "Buy Now!"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={buy}
+              className={`w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide transition-all duration-200 ${
+                isElite ? "bg-[#0a1628] hover:bg-[#1a3a6b] text-white" : "bg-amber-500 hover:bg-amber-600 text-white"
+              } hover:scale-[1.02] active:scale-[0.98]`}>
+              <Zap className="w-3.5 h-3.5" /> Buy Now!
+            </button>
+            <p className="text-[10px] text-center text-slate-400 mt-1.5 flex items-center justify-center gap-1">
+              <Lock className="w-3 h-3" /> Sign in required to complete purchase
+            </p>
+          </>
+        )}
       </div>
-      ) : (
-      <div className="px-5 pb-5 pt-4 bg-white border-t border-slate-100">
-        <a href="/login" className="w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide bg-slate-100 text-slate-500 hover:bg-[#0a1628] hover:text-white transition-all duration-200">
-          <Lock className="w-3.5 h-3.5" /> Sign In to See Pricing
-        </a>
-      </div>
-      )}
     </div>
   );
 }

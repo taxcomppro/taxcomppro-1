@@ -2,8 +2,10 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setUser } from "@/store/slices/authSlice";
 import Link from "next/link";
-import { Download, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
+import { Download, CheckCircle2, Loader2, ExternalLink, Crown } from "lucide-react";
 
 interface Purchase {
   id: string; toolkitId: string; name: string; emoji: string;
@@ -11,20 +13,49 @@ interface Purchase {
   createdAt: string; downloadUrl: string | null;
 }
 
+const TIER_LABELS: Record<string, string> = {
+  MARKETPLACE: "Marketplace", MARKETPLACE_PLUS: "Marketplace Plus", VIP: "VIP",
+};
+
 function SuccessContent() {
-  const params = useSearchParams();
+  const params    = useSearchParams();
   const sessionId = params.get("session_id");
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [loading,   setLoading]   = useState(true);
+  const dispatch  = useAppDispatch();
+  const user      = useAppSelector(s => s.auth.user);
+
+  const [purchases,   setPurchases]   = useState<Purchase[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [grantedTier, setGrantedTier] = useState<string | null>(null);
 
   useEffect(() => {
-    // Give webhook a moment to process
-    const timer = setTimeout(() => {
-      fetch("/api/user/purchases").then(r => r.json())
-        .then((d: Purchase[]) => setPurchases(Array.isArray(d) ? d : []))
-        .finally(() => setLoading(false));
-    }, 2000);
-    return () => clearTimeout(timer);
+    if (!sessionId) { setLoading(false); return; }
+
+    // Step 1 — call verify-session: this idempotently applies the tier upgrade
+    // and creates the purchase record if the webhook hasn't fired yet
+    fetch("/api/stripe/verify-session", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ sessionId }),
+    })
+      .then(r => r.json())
+      .then((data: { tier?: string; user?: Record<string, unknown> }) => {
+        if (data.tier && data.tier !== "FREE") {
+          setGrantedTier(data.tier);
+          // Update Redux immediately so Navbar / feed show new tier
+          if (user) {
+            dispatch(setUser({ ...user, tier: data.tier as typeof user.tier }));
+          }
+        }
+
+        // Step 2 — load purchases (now guaranteed to exist)
+        return fetch("/api/user/purchases");
+      })
+      .then(r => r?.json())
+      .then((d: Purchase[]) => setPurchases(Array.isArray(d) ? d : []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   return (
@@ -38,6 +69,19 @@ function SuccessContent() {
           <h1 className="text-3xl font-black text-[#0a1628] mb-2">Purchase Complete!</h1>
           <p className="text-slate-500">Your toolkit is ready and membership has been activated.</p>
         </div>
+
+        {/* Membership activated banner */}
+        {grantedTier && (
+          <div className="bg-gradient-to-r from-indigo-500 to-indigo-700 text-white rounded-2xl p-4 mb-4 flex items-center gap-3">
+            <Crown className="w-6 h-6 text-amber-300 shrink-0" />
+            <div>
+              <p className="font-black text-sm">Membership Activated!</p>
+              <p className="text-indigo-200 text-xs mt-0.5">
+                You now have <strong className="text-white">{TIER_LABELS[grantedTier] ?? grantedTier}</strong> access. Enjoy your benefits!
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Downloads */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-4">
@@ -57,7 +101,7 @@ function SuccessContent() {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-[#0a1628] text-sm truncate">{p.name}</p>
                     <p className="text-xs text-emerald-600 font-semibold">
-                      {p.membershipMonths} months {p.membershipTier} membership activated
+                      {p.membershipMonths} months {TIER_LABELS[p.membershipTier] ?? p.membershipTier} membership activated
                     </p>
                   </div>
                   {p.downloadUrl ? (
@@ -78,8 +122,8 @@ function SuccessContent() {
           <Link href="/toolkits" className="flex items-center justify-center gap-2 text-sm font-bold border-2 border-[#0a1628] text-[#0a1628] py-3 rounded-xl hover:bg-[#0a1628] hover:text-white transition-all">
             <ExternalLink className="w-4 h-4" /> More Toolkits
           </Link>
-          <Link href="/feed" className="flex items-center justify-center gap-2 text-sm font-bold bg-[#0a1628] text-white py-3 rounded-xl hover:bg-[#1a3a6b] transition-all">
-            Go to Dashboard
+          <Link href="/profile" className="flex items-center justify-center gap-2 text-sm font-bold bg-[#0a1628] text-white py-3 rounded-xl hover:bg-[#1a3a6b] transition-all">
+            Go to Profile
           </Link>
         </div>
       </div>

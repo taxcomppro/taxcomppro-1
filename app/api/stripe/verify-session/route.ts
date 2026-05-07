@@ -59,10 +59,49 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Toolkit / bundle one-time purchase — tier already written by webhook, just return current tier
+  // Toolkit / bundle one-time purchase — apply upgrade ourselves (idempotent fallback for webhook)
   if (type === "toolkit" || type === "bundle") {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } });
-    resolvedTier = user?.tier ?? "FREE";
+    const { toolkitId, membershipTier, membershipMonths, bundleId } = stripeSession.metadata ?? {};
+    const mTier  = (membershipTier ?? "MARKETPLACE") as SubscriptionTier;
+    const months = Number(membershipMonths ?? 2);
+    const tkId   = type === "toolkit" ? toolkitId : `bundle:${bundleId ?? "unknown"}`;
+
+    if (tkId) {
+      // Only create the purchase record if the webhook hasn't already done it
+      const existing = await prisma.toolkitPurchase.findFirst({
+        where: { stripeSessionId: stripeSession.id },
+      });
+
+      if (!existing) {
+        await prisma.toolkitPurchase.create({
+          data: {
+            userId,
+            toolkitId:        tkId,
+            stripeSessionId:  stripeSession.id,
+            membershipGranted: true,
+            membershipTier:   mTier,
+            membershipMonths: months,
+          },
+        });
+
+        // Apply tier upgrade (never downgrade)
+        const currentUser = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } });
+        const tierOrder: SubscriptionTier[] = ["FREE", "VIP", "MARKETPLACE", "MARKETPLACE_PLUS"];
+        if (tierOrder.indexOf(mTier) > tierOrder.indexOf(currentUser?.tier ?? "FREE")) {
+          await prisma.user.update({ where: { id: userId }, data: { tier: mTier } });
+        }
+
+        await prisma.notification.create({
+          data: {
+            userId, type: "SYSTEM",
+            title:   "🎉 Toolkit Purchase Complete!",
+            message: `Your download is ready and you've received ${months} months of ${mTier} membership.`,
+          },
+        }).catch(() => {});
+      }
+    }
+
+    resolvedTier = (await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } }))?.tier ?? "FREE";
   }
 
   // Return the fresh tier so the client can update Redux

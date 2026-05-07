@@ -3,9 +3,18 @@ import { useState, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUser } from "@/store/slices/authSlice";
 import Link from "next/link";
-import { Loader2, BadgeCheck, Clock, X, CreditCard, Camera } from "lucide-react";
+import { Loader2, BadgeCheck, Clock, X, CreditCard, Camera, Download } from "lucide-react";
 import { UserCircleIcon, Mail01Icon, Briefcase01Icon, NoteIcon, Tick02Icon, BookOpen01Icon, UserGroupIcon, Rocket01Icon, ShoppingBag01Icon, Add01Icon } from "hugeicons-react";
 import DueDiligenceBadge from "@/components/badges/DueDiligenceBadge";
+
+interface Purchase {
+  id: string; toolkitId: string; name: string; emoji: string;
+  membershipTier: string; membershipMonths: number;
+  createdAt: string; downloadUrl: string | null;
+}
+const TIER_LABELS: Record<string, string> = {
+  MARKETPLACE: "Marketplace", MARKETPLACE_PLUS: "Marketplace Plus", VIP: "VIP",
+};
 
 type AppStatus = "PENDING"|"APPROVED"|"REJECTED";
 interface App { status: AppStatus; note: string|null; createdAt: string; }
@@ -30,7 +39,9 @@ export default function MemberProfile() {
   const [appSpec, setAppSpec] = useState(""); const [appCreds, setAppCreds] = useState(""); const [appReason, setAppReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "badges">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "badges" | "purchases">("profile");
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [purchasesLoading, setPurchasesLoading] = useState(false);
 
   const openPortal = async () => {
     setPortalLoading(true);
@@ -47,6 +58,16 @@ export default function MemberProfile() {
     });
     fetch("/api/professional-application").then(r => r.json()).then(setApp);
   }, []);
+
+  // Load purchases when the tab is activated
+  useEffect(() => {
+    if (activeTab !== "purchases" || purchases.length > 0) return;
+    setPurchasesLoading(true);
+    fetch("/api/user/purchases")
+      .then(r => r.json())
+      .then((d: Purchase[]) => setPurchases(Array.isArray(d) ? d : []))
+      .finally(() => setPurchasesLoading(false));
+  }, [activeTab]); // eslint-disable-line
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -180,7 +201,7 @@ export default function MemberProfile() {
 
         {/* ── Tab Bar ── */}
         <div className="flex gap-1 bg-white rounded-2xl p-1.5 mb-5 border border-slate-100 shadow-sm">
-          {(["profile", "badges"] as const).map(tab => (
+          {(["profile", "badges", "purchases"] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -190,12 +211,57 @@ export default function MemberProfile() {
                   : "text-slate-500 hover:bg-slate-50"
               }`}
             >
-              {tab === "profile" ? "✏️  Profile" : "🏅  My Badges"}
+              {tab === "profile" ? "✏️  Profile" : tab === "badges" ? "🏅  My Badges" : "📦  My Purchases"}
             </button>
           ))}
         </div>
 
-        {activeTab === "badges" ? (
+        {activeTab === "purchases" ? (
+          /* ── Purchases Tab ── */
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h2 className="font-black text-[#0a1628] text-base mb-1">My Purchases</h2>
+            <p className="text-xs text-slate-400 mb-6">Your toolkit downloads are always available here.</p>
+            {purchasesLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-7 h-7 animate-spin text-slate-300" />
+              </div>
+            ) : purchases.length === 0 ? (
+              <div className="text-center py-10">
+                <span className="text-4xl mb-3 block">📦</span>
+                <p className="font-black text-slate-400">No purchases yet</p>
+                <p className="text-xs text-slate-300 mt-1 mb-4">Buy a toolkit to get professional resources + membership access.</p>
+                <a href="/toolkits" className="inline-flex items-center gap-2 bg-[#0a1628] text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all">
+                  Browse Toolkits
+                </a>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {purchases.map(p => (
+                  <div key={p.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <span className="text-3xl shrink-0">{p.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-[#0a1628] text-sm truncate">{p.name}</p>
+                      <p className="text-xs text-emerald-600 font-semibold">
+                        {p.membershipMonths}mo {TIER_LABELS[p.membershipTier] ?? p.membershipTier} membership included
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Purchased {new Date(p.createdAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    </div>
+                    {p.downloadUrl ? (
+                      <a href={p.downloadUrl} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 bg-[#0a1628] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-[#1a3a6b] transition-all shrink-0">
+                        <Download className="w-3.5 h-3.5" /> Download
+                      </a>
+                    ) : (
+                      <span className="text-xs text-slate-400 px-3 py-2 bg-slate-100 rounded-xl shrink-0">Coming soon</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === "badges" ? (
           /* ── Badges Tab ── */
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
             <h2 className="font-black text-[#0a1628] text-base mb-1">My Achievements</h2>

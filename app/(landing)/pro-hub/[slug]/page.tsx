@@ -101,35 +101,35 @@ function PostRow({ p, forumSlug, onVote }: {
   onVote: (id: string, v: 1 | -1) => void;
 }) {
   return (
-    <div className="flex items-start gap-4 px-5 py-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition-colors group">
+    <div className="flex items-start gap-4 px-5 py-5 border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors group">
       {/* Vote */}
-      <div className="flex flex-col items-center gap-0.5 pt-0.5 shrink-0">
+      <div className="flex flex-col items-center gap-0.5 pt-1 shrink-0">
         <button onClick={() => onVote(p.id, 1)}
-          className="p-1 rounded hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors">
-          <ArrowUp className="w-3.5 h-3.5" />
+          className="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors">
+          <ArrowUp className="w-4 h-4" />
         </button>
-        <span className="text-xs font-black text-[#0a1628] tabular-nums">{p.votes}</span>
+        <span className="text-sm font-black text-[#0a1628] tabular-nums">{p.votes}</span>
         <button onClick={() => onVote(p.id, -1)}
-          className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-400 transition-colors">
-          <ArrowDown className="w-3.5 h-3.5" />
+          className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-400 transition-colors">
+          <ArrowDown className="w-4 h-4" />
         </button>
       </div>
 
       {/* Content */}
       <Link href={`/pro-hub/${forumSlug}/${p.id}`} className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-          {p.isPinned && <Pin className="w-3 h-3 text-amber-500 shrink-0" />}
-          <h3 className="font-bold text-[#0a1628] text-sm leading-snug group-hover:text-[#1a3a6b] transition-colors">{p.title}</h3>
+        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+          {p.isPinned && <Pin className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+          <h3 className="font-bold text-[#0a1628] text-base leading-snug group-hover:text-[#1a3a6b] transition-colors">{p.title}</h3>
         </div>
-        <p className="text-[11px] text-slate-400 line-clamp-1 mb-2">{p.body}</p>
-        <div className="flex items-center gap-3 text-[11px] text-slate-400">
-          <div className="flex items-center gap-1">
+        <p className="text-sm text-slate-500 line-clamp-2 mb-2.5 leading-relaxed">{p.body}</p>
+        <div className="flex items-center gap-4 text-sm text-slate-400">
+          <div className="flex items-center gap-1.5">
             {p.author.image
-              ? <img src={p.author.image} alt="" className="w-4 h-4 rounded-full object-cover" />
-              : <div className="w-4 h-4 rounded-full bg-[#0a1628] flex items-center justify-center text-white text-[8px] font-black">{p.author.name[0]}</div>}
-            <span className="font-medium text-slate-500">{p.author.name}</span>
+              ? <img src={p.author.image} alt="" className="w-5 h-5 rounded-full object-cover" />
+              : <div className="w-5 h-5 rounded-full bg-[#0a1628] flex items-center justify-center text-white text-[9px] font-black">{p.author.name[0]}</div>}
+            <span className="font-medium text-slate-600">{p.author.name}</span>
           </div>
-          <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{p._count.comments}</span>
+          <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" />{p._count.comments} comments</span>
           <span>{timeAgo(p.createdAt)}</span>
         </div>
       </Link>
@@ -229,7 +229,7 @@ export default function ForumDetailPage({ params }: { params: Promise<{ slug: st
             <ChevronLeft className="w-3.5 h-3.5" /> Pro Hub
           </Link>
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-black text-white">{forum?.name ?? "Loading…"}</h1>
+            <h1 className="text-3xl font-black text-white">{forum?.name ?? "Loading…"}</h1>
             {forum?.isAdminOnly && (
               <span className="flex items-center gap-1 text-[10px] font-black bg-red-500 text-white px-2 py-0.5 rounded-full">
                 <Lock className="w-2.5 h-2.5" /> Admin Posts Only
@@ -239,7 +239,7 @@ export default function ForumDetailPage({ params }: { params: Promise<{ slug: st
               <span className="text-[10px] font-black bg-[#d4a017] text-[#0a1628] px-2 py-0.5 rounded-full">{forum.badge}</span>
             )}
           </div>
-          {forum?.description && <p className="text-slate-300 text-sm mt-1 max-w-2xl line-clamp-1">{forum.description}</p>}
+          {forum?.description && <p className="text-slate-300 text-base mt-2 max-w-2xl line-clamp-2">{forum.description}</p>}
         </div>
       </div>
 

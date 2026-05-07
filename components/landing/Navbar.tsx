@@ -21,15 +21,10 @@ type NavItem =
   | { type: "dropdown"; label: string; icon: React.ElementType; items: { label: string; href: string; icon: React.ElementType; desc: string }[] };
 
 const navItems: NavItem[] = [
-  { type: "link",     label: "Home",      href: "/feed",    icon: Home01Icon },
-  { type: "link",     label: "Courses",   href: "/courses", icon: BookOpen01Icon },
-  { type: "link",     label: "Toolkits",  href: "/toolkits",icon: GraduationCap },
-  {
-    type: "dropdown", label: "Marketplace", icon: ShoppingBag01Icon,
-    items: [
-      { label: "Marketplace", href: "/marketplace", icon: ShoppingBag01Icon, desc: "" },
-    ],
-  },
+  { type: "link",     label: "Home",        href: "/feed",        icon: Home01Icon },
+  { type: "link",     label: "Courses",     href: "/courses",    icon: BookOpen01Icon },
+  { type: "link",     label: "Toolkits",    href: "/toolkits",   icon: GraduationCap },
+  { type: "link",     label: "Marketplace", href: "/marketplace",icon: ShoppingBag01Icon },
   {
     type: "dropdown", label: "Pros", icon: UserGroupIcon,
     items: [
@@ -159,12 +154,13 @@ export default function Navbar() {
         }
         .atlas-btn:hover { animation: atlas-shine 1.5s ease infinite; }
       `}</style>
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white dark:bg-[#172135] border-b border-slate-200 dark:border-[#243550] shadow-sm dark:shadow-[0_1px_8px_rgba(0,0,0,0.5)]">
       <div className="max-w-7xl mx-auto px-6 h-[80px] flex items-center gap-4">
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 relative z-50">
-          <img src="/logo.png" alt="TaxComPro" className="h-16 w-auto" />
+          <img src="/logo.png"      alt="TaxComPro" className="h-16 w-auto dark:hidden" />
+          <img src="/logo_dark.png" alt="TaxComPro" className="h-16 w-auto hidden dark:block" />
         </Link>
 
         {/* Search bar (expanded) */}
@@ -238,12 +234,12 @@ export default function Navbar() {
               })}
             </nav>
 
-            {/* Atlas AI promo pill — in nav, after Pros */}
+            {/* Atlas AI promo button — square, black text */}
             <a
               href="https://atlas-ai-iota.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="atlas-btn hidden md:flex items-center gap-2 text-white text-xs px-4 py-2 rounded-full transition-all hover:scale-105 active:scale-95 shrink-0 ml-2"
+              className="atlas-btn hidden md:flex items-center gap-2 text-[#0a1628] font-black text-xs px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0 ml-2"
             >
               <img src="/icon.png" alt="Atlas AI" className="w-5 h-5 rounded-sm object-contain" />
               <span>Try Atlas AI</span>
@@ -307,10 +303,10 @@ export default function Navbar() {
                 </div>
               ) : user ? (
                 <div className="relative ml-1" ref={dropdownRef}>
-                  <button
+                <button
                     onClick={() => setDropdownOpen(o => !o)}
-                    className="flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full pl-2 pr-3.5 py-1.5 transition-all">
-                    <div className="w-7 h-7 rounded-full bg-[#1a3a6b] overflow-hidden flex items-center justify-center shrink-0">
+                    className="flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl pl-2 pr-3.5 py-1.5 transition-all">
+                    <div className="w-7 h-7 rounded-xl bg-[#1a3a6b] overflow-hidden flex items-center justify-center shrink-0">
                       {user.image
                         ? <img src={user.image as string} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                         : <span className="text-white font-bold text-xs">{user.name?.[0]?.toUpperCase()}</span>}
