@@ -12,7 +12,12 @@ const PUBLIC_PAGES = new Set([
   "/cookie-policy",
   "/community-guidelines",
   "/contact",
+  "/courses",
+  "/toolkits",
 ]);
+
+// Prefix-based public paths (any sub-path is also public)
+const PUBLIC_PREFIXES = ["/courses/", "/toolkits/"];
 
 // Auth pages — logged-in users get bounced away from these
 const AUTH_PAGES = ["/login", "/register"];
@@ -42,7 +47,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Not logged in & page is NOT public → send to login
-  if (!session && !PUBLIC_PAGES.has(pathname)) {
+  if (!session && !PUBLIC_PAGES.has(pathname) && !PUBLIC_PREFIXES.some(p => pathname.startsWith(p))) {
     const dest = new URL("/login", request.url);
     dest.searchParams.set("next", pathname);
     return NextResponse.redirect(dest);

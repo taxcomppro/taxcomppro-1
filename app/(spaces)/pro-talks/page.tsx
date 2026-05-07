@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
 import { Loader2, X } from "lucide-react";
 import { Mic01Icon, Radio01Icon, UserGroupIcon, Add01Icon } from "hugeicons-react";
+import UpgradeGate from "@/components/ui/UpgradeGate";
 
 interface SpaceHost { id: string; name: string; image: string | null; headline: string | null; }
 interface Space { id: string; name: string; description: string | null; roomName: string; isLive: boolean; createdAt: string; host: SpaceHost; }
@@ -40,6 +41,26 @@ export default function ProTalksPage() {
   useEffect(() => {
     fetch("/api/spaces").then(r => r.json()).then(setSpaces).finally(() => setLoading(false));
   }, []);
+
+  // Login gate
+  if (!user) return (
+    <div className="min-h-screen bg-gradient-to-br from-[#06091a] via-[#0d1635] to-[#0a0e26] flex items-center justify-center px-4">
+      <div className="text-center">
+        <Mic01Icon className="w-16 h-16 text-white/20 mx-auto mb-4" />
+        <h1 className="text-2xl font-black text-white mb-2">Sign in to access Pro Talks</h1>
+        <p className="text-white/40 text-sm mb-6">Live audio rooms for tax professionals</p>
+        <Link href="/login" className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold px-6 py-3 rounded-full hover:from-violet-500 hover:to-indigo-500 transition-all">Sign In</Link>
+      </div>
+    </div>
+  );
+
+  // FREE tier gate
+  if (user.tier === "FREE") return (
+    <UpgradeGate
+      feature="Pro Talks"
+      description="Join live audio rooms hosted by tax professionals and industry experts. Available exclusively for VIP members."
+    />
+  );
 
   const handleCreate = async () => {
     if (!name.trim() || creating) return;

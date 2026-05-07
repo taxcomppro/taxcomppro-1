@@ -5,6 +5,7 @@ import { useAppSelector } from "@/store/hooks";
 import { Loader2, MoreHorizontal, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { ThumbsUpIcon, Comment01Icon, Share01Icon, SentIcon } from "hugeicons-react";
 import DueDiligenceBadge from "@/components/badges/DueDiligenceBadge";
+import UpgradeModal from "@/components/ui/UpgradeModal";
 
 interface Author {
   id: string; name: string; image: string | null;
@@ -43,6 +44,8 @@ const tierBadge: Record<string, string> = {
 
 export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost; onUpdate: (updated: FeedPost) => void; onDelete?: (id: string) => void }) {
   const user = useAppSelector(s => s.auth.user);
+  const isFree = user?.tier === "FREE";
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [liked, setLiked]           = useState(post.likes.length > 0);
   const [likeCount, setLikeCount]   = useState(post._count.likes);
   const [liking, setLiking]         = useState(false);
@@ -111,6 +114,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
   };
 
   const handleLike = async () => {
+    if (!user || isFree) { setShowUpgrade(true); return; }
     if (liking) return;
     setLiking(true);
     const newLiked = !liked;
@@ -140,6 +144,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
 
   const handleAddComment = async () => {
     if (!commentText.trim() || postingComment) return;
+    if (isFree) { setShowUpgrade(true); return; }
     setPostingComment(true);
     try {
       const res = await fetch(`/api/feed/${post.id}/comment`, {
@@ -162,6 +167,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
 
   return (
     <>
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} feature="Liking & commenting" />}
       <div className="bg-white rounded-2xl overflow-hidden transition-all">
       {/* Header */}
       <div className="flex items-start gap-3 p-5 pb-3">
@@ -366,26 +372,35 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
             </div>
           )}
 
-          {/* Add comment */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-xl bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
-              {user?.image
-                ? <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                : <span className="text-white text-[10px] font-bold">{user?.name?.[0]?.toUpperCase()}</span>}
-            </div>
-            <div className="flex-1 flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-3 py-2">
-              <input
-                type="text" placeholder="Add a comment…" value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") handleAddComment(); }}
-              className="flex-1 font-[inherit] text-sm outline-none bg-transparent text-slate-700 placeholder-slate-400"
-              />
+          {/* Add comment — upgrade nudge for FREE users, input for VIP+ */}
+          {isFree ? (
+            <button
+              onClick={() => setShowUpgrade(true)}
+              className="flex items-center gap-2 w-full bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-xl px-4 py-3 text-xs font-bold text-amber-700 hover:from-amber-100 hover:to-amber-200 transition-all"
+            >
+              💎 Upgrade to VIP to add a comment
+            </button>
+          ) : (
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
+                {user?.image
+                  ? <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                  : <span className="text-white text-[10px] font-bold">{user?.name?.[0]?.toUpperCase()}</span>}
+              </div>
+              <div className="flex-1 flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-3 py-2">
+                <input
+                  type="text" placeholder="Add a comment…" value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") handleAddComment(); }}
+                  className="flex-1 font-[inherit] text-sm outline-none bg-transparent text-slate-700 placeholder-slate-400"
+                />
                 <button onClick={handleAddComment} disabled={!commentText.trim() || postingComment}
                   className="w-8 h-8 rounded-full bg-[#0a1628] flex items-center justify-center text-white hover:bg-[#1a3a6b] transition-colors disabled:opacity-30">
                   {postingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <SentIcon className="w-4 h-4 ml-0.5" />}
                 </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

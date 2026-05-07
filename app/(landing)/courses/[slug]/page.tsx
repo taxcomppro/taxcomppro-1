@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -373,9 +373,16 @@ export default function CourseDetailPage() {
               </div>
               <div className="p-5">
                 <div className="mb-4">
-                  <div className="text-3xl font-black text-[#0a1628]">
-                    {course.isFree ? <span className="text-emerald-600">Free</span> : <>${course.price}</>}
-                  </div>
+                  {session ? (
+                    <div className="text-3xl font-black text-[#0a1628]">
+                      {course.isFree ? <span className="text-emerald-600">Free</span> : <>${course.price}</>}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                      <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                      <span className="text-sm font-semibold text-slate-500">Sign in to see price</span>
+                    </div>
+                  )}
                 </div>
                 {enrolled && (
                   <div className="mb-4">

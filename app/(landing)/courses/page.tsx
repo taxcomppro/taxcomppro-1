@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAppSelector } from "@/store/hooks";
 import {
   BookOpen, Search, Users, Clock, Star, ChevronRight,
-  Loader2, GraduationCap, Filter, SlidersHorizontal,
+  Loader2, GraduationCap, Filter, SlidersHorizontal, Lock,
 } from "lucide-react";
 
 interface Course {
@@ -41,7 +42,7 @@ function fmtDuration(secs: number) {
   return `${m}m`;
 }
 
-function CourseCard({ course }: { course: Course }) {
+function CourseCard({ course, isLoggedIn }: { course: Course; isLoggedIn: boolean }) {
   const totalLessons = course.sections.reduce((s, sec) => s + sec._count.lessons, 0);
   return (
     <Link href={`/courses/${course.slug}`}
@@ -56,12 +57,17 @@ function CourseCard({ course }: { course: Course }) {
             </div>
           )
         }
-        {/* Price badge */}
+        {/* Price badge — hidden for guests */}
         <div className="absolute top-3 right-3">
-          {course.isFree
-            ? <span className="bg-emerald-500 text-white text-xs font-black px-3 py-1 rounded-full">FREE</span>
-            : <span className="bg-[#f0c040] text-[#0a1628] text-xs font-black px-3 py-1 rounded-full">${course.price}</span>
-          }
+          {isLoggedIn ? (
+            course.isFree
+              ? <span className="bg-emerald-500 text-white text-xs font-black px-3 py-1 rounded-full">FREE</span>
+              : <span className="bg-[#f0c040] text-[#0a1628] text-xs font-black px-3 py-1 rounded-full">${course.price}</span>
+          ) : (
+            <span className="bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+              <Lock className="w-3 h-3" /> Login to see price
+            </span>
+          )}
         </div>
         {/* Level badge */}
         <div className="absolute top-3 left-3">
@@ -99,6 +105,8 @@ function CourseCard({ course }: { course: Course }) {
 }
 
 export default function CoursesPage() {
+  const user = useAppSelector(s => s.auth.user);
+  const isLoggedIn = !!user;
   const [courses, setCourses]   = useState<Course[]>([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState("");
@@ -200,7 +208,7 @@ more—built by experienced professionals.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map(c => <CourseCard key={c.id} course={c} />)}
+            {courses.map(c => <CourseCard key={c.id} course={c} isLoggedIn={isLoggedIn} />)}
           </div>
         )}
       </div>

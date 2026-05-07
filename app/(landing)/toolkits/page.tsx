@@ -59,6 +59,7 @@ function ToolkitCard({ tk }: { tk: Toolkit }) {
       </div>
 
       {/* Price + CTA */}
+      {user ? (
       <div className="px-5 pb-5 pt-4 bg-white border-t border-slate-100">
         <div className="text-center mb-3">
           <span className="text-4xl font-black text-[#0a1628]">${tk.price}</span>
@@ -81,6 +82,13 @@ function ToolkitCard({ tk }: { tk: Toolkit }) {
           {loading ? "Redirecting…" : "Buy Now"}
         </button>
       </div>
+      ) : (
+      <div className="px-5 pb-5 pt-4 bg-white border-t border-slate-100">
+        <a href="/login" className="w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide bg-slate-100 text-slate-500 hover:bg-[#0a1628] hover:text-white transition-all duration-200">
+          <Lock className="w-3.5 h-3.5" /> Sign In to See Pricing
+        </a>
+      </div>
+      )}
     </div>
   );
 }
@@ -154,6 +162,7 @@ function BundleCard({ bundle }: { bundle: Bundle }) {
       </div>
 
       {/* Price + CTA */}
+      {user ? (
       <div className="px-5 pb-5 pt-4 bg-white border-t border-slate-100">
         <div className="text-center mb-3">
           <p className="text-slate-400 line-through text-base font-semibold">${bundle.originalPrice.toLocaleString()}</p>
@@ -178,6 +187,13 @@ function BundleCard({ bundle }: { bundle: Bundle }) {
           {loading ? "Redirecting…" : "Buy Now!"}
         </button>
       </div>
+      ) : (
+      <div className="px-5 pb-5 pt-4 bg-white border-t border-slate-100">
+        <a href="/login" className="w-full flex items-center justify-center gap-2 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide bg-slate-100 text-slate-500 hover:bg-[#0a1628] hover:text-white transition-all duration-200">
+          <Lock className="w-3.5 h-3.5" /> Sign In to See Pricing
+        </a>
+      </div>
+      )}
     </div>
   );
 }

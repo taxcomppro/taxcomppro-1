@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
 import { Send, MessageSquare, Loader2, ArrowLeft, Check, CheckCheck, Search, Megaphone, Paperclip, X, FileText, Image as ImageIcon, Download } from "lucide-react";
 import { Room, RoomEvent } from "livekit-client";
+import UpgradeGate from "@/components/ui/UpgradeGate";
 
 interface MiniUser { id: string; name: string; image: string | null; headline?: string | null; }
 interface Message  { id: string; senderId: string; receiverId: string; content: string; fileUrl?: string|null; fileName?: string|null; fileType?: string|null; isRead: boolean; isSponsored?: boolean; createdAt: string; }
@@ -226,6 +227,13 @@ function MessagesContent() {
         <Link href="/login" className="inline-flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-6 py-3 rounded-full mt-3 hover:bg-[#1a3a6b] transition-all">Sign In</Link>
       </div>
     </div>
+  );
+
+  if (me.tier === "FREE") return (
+    <UpgradeGate
+      feature="Private Messaging"
+      description="Send and receive private messages with your connections. Available exclusively for VIP members."
+    />
   );
 
   const filteredContacts = search

@@ -2,9 +2,10 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { Loader2, X, AlertCircle, Calendar, Clock } from "lucide-react";
+import { Loader2, X, AlertCircle, Calendar, Clock, Crown } from "lucide-react";
 import { Image01Icon, SentIcon, Video02Icon } from "hugeicons-react";
 import type { FeedPost } from "@/components/feed/PostCard";
+import UpgradeModal from "@/components/ui/UpgradeModal";
 
 interface Props {
   onPostCreated: (post: FeedPost) => void;
@@ -21,6 +22,8 @@ function minDateTimeLocal() {
 
 export default function PostComposer({ onPostCreated, onScheduled }: Props) {
   const user         = useAppSelector(s => s.auth.user);
+  const isFree       = user?.tier === "FREE";
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [content,    setContent]    = useState("");
   const [expanded,   setExpanded]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -160,8 +163,20 @@ export default function PostComposer({ onPostCreated, onScheduled }: Props) {
   const canSubmit = (content.trim().length > 0 || previews.length > 0 || !!video) && !submitting;
 
   return (
-    <div className="bg-white rounded-2xl p-4">
-      <div className="flex items-start gap-3">
+    <>
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} feature="Posting & interacting" />}
+
+    <div className="bg-white rounded-2xl overflow-hidden">
+      {/* VIP required strip for FREE members */}
+      {isFree && (
+        <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-amber-100 border-b border-amber-200 px-4 py-2">
+          <Crown className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+          <span className="text-xs font-bold text-amber-700">VIP required to post, like &amp; comment</span>
+          <button onClick={() => setShowUpgrade(true)} className="ml-auto text-[10px] font-black text-amber-700 bg-amber-200 hover:bg-amber-300 px-2.5 py-1 rounded-full transition-all">Upgrade →</button>
+        </div>
+      )}
+
+      <div className="flex items-start gap-3 p-4">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-xl bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
           {user?.image
@@ -172,7 +187,7 @@ export default function PostComposer({ onPostCreated, onScheduled }: Props) {
         <div className="flex-1">
           {!expanded ? (
             <button
-              onClick={() => { setExpanded(true); setTimeout(() => textRef.current?.focus(), 50); }}
+              onClick={() => { if (isFree) { setShowUpgrade(true); return; } setExpanded(true); setTimeout(() => textRef.current?.focus(), 50); }}
               className="w-full text-left text-slate-400 text-sm bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full px-5 py-3 transition-all">
               Share an insight or update, {user?.name?.split(" ")[0]}…
             </button>
@@ -315,5 +330,6 @@ export default function PostComposer({ onPostCreated, onScheduled }: Props) {
         </div>
       </div>
     </div>
+    </>
   );
 }

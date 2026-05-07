@@ -9,6 +9,7 @@ import {
   Clock01Icon, Tick02Icon, Cancel01Icon, Message01Icon,
   UserRemove02Icon, ArrowRight01Icon,
 } from "hugeicons-react";
+import UpgradeGate from "@/components/ui/UpgradeGate";
 
 interface Person { id: string; name: string; image: string | null; headline: string | null; role: string; }
 interface Connection { id: string; status: string; requester: Person; receiver: Person; }
@@ -129,6 +130,13 @@ export default function ConnectionsPage() {
         <Link href="/login" className="inline-flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-6 py-3 rounded-xl mt-3 hover:bg-[#1a3a6b] transition-all">Sign In</Link>
       </div>
     </div>
+  );
+
+  if (user.tier === "FREE") return (
+    <UpgradeGate
+      feature="Connections & Networking"
+      description="Connect and build your professional network with other tax professionals. Available exclusively for VIP members."
+    />
   );
 
   const navItems = [
