@@ -5,6 +5,7 @@ import PostComposer from "@/components/feed/PostComposer";
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
 import FeedLeftPanel from "@/components/feed/FeedLeftPanel";
 import FeedRightPanel from "@/components/feed/FeedRightPanel";
+import ScheduledPostsPanel from "@/components/feed/ScheduledPostsPanel";
 import { Loader2, RefreshCw, MonitorPlay, ExternalLink } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
 
@@ -16,6 +17,7 @@ export default function FeedPage() {
   const [nextCursor, setNextCursor]   = useState<string | null>(null);
   const [hasNew, setHasNew]           = useState(false);
   const [centerAds, setCenterAds]     = useState<{id:string;title:string;description:string|null;imageUrl:string;linkUrl:string;user:{name:string}}[]>([]);
+  const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
   const loaderRef    = useRef<HTMLDivElement>(null);
   const pollingRef   = useRef<NodeJS.Timeout | null>(null);
   const latestIdRef  = useRef<string | null>(null);
@@ -109,7 +111,10 @@ export default function FeedPage() {
           {/* CENTER — feed */}
           <div className="space-y-4">
             {/* Only show composer for logged-in users */}
-            {user && <PostComposer onPostCreated={handlePostCreated} />}
+            {user && <PostComposer onPostCreated={handlePostCreated} onScheduled={() => setScheduleRefreshKey(k => k + 1)} />}
+
+            {/* Scheduled posts snippet — only for logged-in users */}
+            {user && <ScheduledPostsPanel refreshKey={scheduleRefreshKey} />}
 
             {/* New posts banner */}
             {hasNew && (

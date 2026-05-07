@@ -225,6 +225,22 @@ export default function AdminPage() {
               ))}
             </div>
 
+            {/* Content Calendar */}
+            <div className="bg-white rounded-2xl p-5 border border-blue-100">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-blue-600 text-xl">📅</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Admin Tool</span>
+              </div>
+              <h3 className="font-black text-base text-[#0a1628] mb-1">Content Calendar</h3>
+              <p className="text-slate-500 text-xs leading-relaxed mb-4">
+                View and manage all <strong className="text-[#0a1628]">scheduled posts</strong> across the platform. Publish or delete any post.
+              </p>
+              <Link href="/admin/content-calendar"
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white font-black text-sm px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-all">
+                <ChartBarLineIcon className="w-4 h-4" /> Open Calendar
+              </Link>
+            </div>
+
             {/* Create featured listing CTA */}
             <div className="bg-[#0a1628] rounded-2xl p-5 text-white">
               <div className="flex items-center gap-2 mb-1">

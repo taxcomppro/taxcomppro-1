@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
 import {
   ArrowUp, ArrowDown, MessageSquare, Plus, Loader2,
-  ChevronLeft, Lock, TrendingUp, Clock, Star, Pin, X, Check,
+  ChevronLeft, Lock, TrendingUp, Clock, Star, Pin, X, Check, RefreshCw,
 } from "lucide-react";
 
 interface Post {
@@ -142,11 +142,14 @@ export default function ForumDetailPage({ params }: { params: Promise<{ slug: st
   const { slug } = use(params);
   const user     = useAppSelector(s => s.auth.user);
 
-  const [forum,   setForum]   = useState<Forum | null>(null);
-  const [posts,   setPosts]   = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sort,    setSort]    = useState<"hot" | "new" | "top">("hot");
-  const [showNew, setShowNew] = useState(false);
+  const [forum,      setForum]      = useState<Forum | null>(null);
+  const [posts,      setPosts]      = useState<Post[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [sort,       setSort]       = useState<"hot" | "new" | "top">("hot");
+  const [showNew,    setShowNew]    = useState(false);
+  const [syncing,    setSyncing]    = useState(false);
+  const [syncMsg,    setSyncMsg]    = useState("");
+  const [initializing, setInitializing] = useState(slug === "irs-updates");
 
   const canPost = user && (!forum?.isAdminOnly || user.role === "ADMIN");
 
@@ -158,7 +161,10 @@ export default function ForumDetailPage({ params }: { params: Promise<{ slug: st
       .finally(() => setLoading(false));
   }, [slug, sort]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (slug === "irs-updates") return; // handled by auto-init effect
+    load();
+  }, [load]);
 
   const handleVote = async (postId: string, value: 1 | -1) => {
     if (!user) return;
@@ -171,8 +177,50 @@ export default function ForumDetailPage({ params }: { params: Promise<{ slug: st
     }
   };
 
+  const handleSyncIrs = async () => {
+    setSyncing(true); setSyncMsg("");
+    try {
+      const res = await fetch(`/api/pro-hub/${slug}/sync-irs`, { method: "POST" });
+      const data = await res.json();
+      if (data.created > 0) {
+        setSyncMsg(`✅ Synced ${data.created} new IRS update${data.created !== 1 ? "s" : ""}`);
+        load(); // reload posts
+      } else if (data.error) {
+        setSyncMsg(`❌ ${data.error}`);
+      } else {
+        setSyncMsg("✅ Already up to date");
+      }
+    } catch {
+      setSyncMsg("❌ Sync failed");
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMsg(""), 4000);
+    }
+  };
+
+  const isIrsForum = forum?.badge?.toLowerCase().includes("irs") || slug === "irs-updates";
+
+  // Auto-init: for irs-updates forum, ensure forum+posts exist before loading
+  useEffect(() => {
+    if (slug !== "irs-updates") { setInitializing(false); return; }
+    fetch("/api/pro-hub/irs-updates/auto-init")
+      .finally(() => { setInitializing(false); load(); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
   return (
     <div className="min-h-screen bg-[#f4f6fb]">
+      {/* Initializing overlay for IRS forum first visit */}
+      {initializing && (
+        <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+          <div className="text-5xl">🏛️</div>
+          <div className="flex items-center gap-2 text-[#0a1628] font-black text-lg">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Syncing latest IRS news…
+          </div>
+          <p className="text-sm text-slate-400">Fetching updates from irs.gov/newsroom</p>
+        </div>
+      )}
       {/* Banner */}
       <div className="relative h-48 bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] overflow-hidden">
         {forum?.image && <img src={forum.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />}
@@ -207,6 +255,17 @@ export default function ForumDetailPage({ params }: { params: Promise<{ slug: st
             ))}
           </div>
           <div className="flex items-center gap-2">
+            {/* Sync IRS News button — admin only, shown for IRS forums */}
+            {user?.role === "ADMIN" && isIrsForum && (
+              <div className="flex items-center gap-2">
+                <button onClick={handleSyncIrs} disabled={syncing}
+                  className="flex items-center gap-2 bg-blue-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-all disabled:opacity-60">
+                  {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  {syncing ? "Syncing…" : "Sync IRS News"}
+                </button>
+                {syncMsg && <span className="text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-xl border border-slate-200">{syncMsg}</span>}
+              </div>
+            )}
             {canPost && (
               <button onClick={() => setShowNew(true)}
                 className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all">

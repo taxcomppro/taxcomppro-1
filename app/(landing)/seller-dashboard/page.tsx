@@ -296,25 +296,32 @@ function SellerDashboardInner() {
 
   return (
     <div className="min-h-screen bg-[#f4f6fb] pt-5 pb-14">
-      <div className="max-w-[1200px] mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-5 items-start">
+      <div className="max-w-[1320px] mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
 
           {/* ── Left Sidebar ── */}
           <div className="hidden lg:block self-start sticky top-[90px] space-y-3">
             {/* Profile */}
             <div className="bg-white rounded-2xl overflow-hidden border border-slate-100">
-              <div className="h-14 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50] relative">
-                <div className="absolute -bottom-7 left-4">
-                  <div className="w-14 h-14 rounded-full border-[3px] border-white bg-[#0a1628] overflow-hidden flex items-center justify-center shadow">
+              {/* Banner */}
+              <div className="h-24 relative">
+                {user.coverImage
+                  ? <div className="absolute inset-0 overflow-hidden"><img src={user.coverImage} alt="" className="w-full h-full object-cover" /></div>
+                  : <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50]">
+                      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+                    </div>
+                }
+                <div className="absolute -bottom-9 left-4">
+                  <div className="w-[72px] h-[72px] rounded-2xl border-[3px] border-white bg-[#0a1628] overflow-hidden flex items-center justify-center shadow-md">
                     {user.image
                       ? <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                      : <span className="text-white font-black text-lg">{user.name?.[0]?.toUpperCase()}</span>}
+                      : <span className="text-white font-black text-2xl">{user.name?.[0]?.toUpperCase()}</span>}
                   </div>
                 </div>
               </div>
-              <div className="px-4 pt-9 pb-4">
-                <div className="font-black text-[#0a1628] text-sm truncate">{user.name}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">{user.tier} plan</div>
+              <div className="px-4 pt-12 pb-4 relative z-10">
+                <div className="font-black text-[#0a1628] text-base truncate">{user.name}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{user.headline ?? user.tier + " plan"}</div>
               </div>
             </div>
 

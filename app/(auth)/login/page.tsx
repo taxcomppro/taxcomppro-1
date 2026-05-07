@@ -119,7 +119,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/">
-            <Image src="/logo.png" alt="TaxComPro" width={160} height={60} className="object-contain" style={{ height: "auto" }} />
+            <Image src="/logo.png" alt="TaxComPro" width={160} height={60} className="object-contain" />
           </Link>
         </div>
 

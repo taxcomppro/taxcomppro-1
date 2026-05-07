@@ -4,11 +4,11 @@ import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
-import { Send, MessageSquare, Loader2, ArrowLeft, Check, CheckCheck, Search, Megaphone } from "lucide-react";
+import { Send, MessageSquare, Loader2, ArrowLeft, Check, CheckCheck, Search, Megaphone, Paperclip, X, FileText, Image as ImageIcon, Download } from "lucide-react";
 import { Room, RoomEvent } from "livekit-client";
 
 interface MiniUser { id: string; name: string; image: string | null; headline?: string | null; }
-interface Message  { id: string; senderId: string; receiverId: string; content: string; isRead: boolean; isSponsored?: boolean; createdAt: string; }
+interface Message  { id: string; senderId: string; receiverId: string; content: string; fileUrl?: string|null; fileName?: string|null; fileType?: string|null; isRead: boolean; isSponsored?: boolean; createdAt: string; }
 interface Thread   { id: string; senderId: string; receiverId: string; content: string; createdAt: string; partner: MiniUser; }
 
 function Avatar({ user, size = "md" }: { user: { name: string; image?: string | null }; size?: "sm"|"md"|"lg" }) {
@@ -43,8 +43,14 @@ function MessagesContent() {
   const [threadsLoading, setThreadsLoading] = useState(true);
   const [chatLoading, setChatLoading]       = useState(false);
   const [search, setSearch]       = useState("");
+  // File attachment state
+  const [attachFile, setAttachFile]   = useState<File | null>(null);
+  const [attachPreview, setAttachPreview] = useState<string | null>(null);
+  const [uploading, setUploading]     = useState(false);
+  const [sendError, setSendError]     = useState<string | null>(null);
   const bottomRef   = useRef<HTMLDivElement>(null);
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const lkRoom       = useRef<Room | null>(null);
   const enc          = useRef(new TextEncoder());
   const dec          = useRef(new TextDecoder());
@@ -135,29 +141,81 @@ function MessagesContent() {
   }, [activeId, me?.id]);
   // ─────────────────────────────────────────────────────────────────
 
+  // Upload file via server-side API (uses Cloudinary signed upload — works for all file types)
+  const uploadToCloudinary = async (file: File): Promise<{ url: string; fileType: string } | null> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res  = await fetch("/api/upload/message", { method: "POST", body: fd });
+      if (!res.ok) return null;
+      const data = await res.json() as { url?: string; fileType?: string };
+      return data.url ? { url: data.url, fileType: data.fileType ?? file.type } : null;
+    } catch { return null; }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAttachFile(file);
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setAttachPreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setAttachPreview(null);
+    }
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+  };
+
+  const removeAttachment = () => { setAttachFile(null); setAttachPreview(null); };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draft.trim() || !activeId) return;
+    if ((!draft.trim() && !attachFile) || !activeId) return;
     setSending(true);
     const content = draft.trim();
     setDraft("");
+    const fileToSend = attachFile;
+    removeAttachment();
+    setSendError(null);
     try {
+      let fileUrl: string | null = null;
+      let fileName: string | null = null;
+      let fileType: string | null = null;
+      if (fileToSend) {
+        setUploading(true);
+        const uploaded = await uploadToCloudinary(fileToSend);
+        setUploading(false);
+        if (!uploaded) {
+          setSendError("File upload failed. Please try again.");
+          setTimeout(() => setSendError(null), 4000);
+          setSending(false);
+          return;
+        }
+        fileUrl  = uploaded.url;
+        fileName = fileToSend.name;
+        fileType = uploaded.fileType;
+      }
       const res = await fetch(`/api/messages/${activeId}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, fileUrl, fileName, fileType }),
       });
       if (res.ok) {
         const newMsg = await res.json() as Message;
-        // Optimistic update for sender
         setMessages(prev => [...prev, newMsg]);
-        // Broadcast to partner via LiveKit data channel
         lkRoom.current?.localParticipant?.publishData(
           enc.current.encode(JSON.stringify(newMsg)),
           { reliable: true }
         );
         loadThreads();
+      } else {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        const msg = err.error ?? "Failed to send message";
+        setSendError(msg);
+        setTimeout(() => setSendError(null), 4000);
       }
-    } catch { /**/ } finally { setSending(false); }
+    } catch { /**/ } finally { setSending(false); setUploading(false); }
   };
 
   if (!me) return (
@@ -307,10 +365,41 @@ function MessagesContent() {
 
                   return (
                     <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      <div className={`max-w-[65%] rounded-2xl text-sm leading-relaxed overflow-hidden ${
                         isMine ? "bg-[#0a1628] text-white rounded-br-none" : "bg-slate-100 text-slate-800 rounded-bl-none"}`}>
-                        {msg.content}
-                        <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
+                        {/* File attachment */}
+                        {msg.fileUrl && (() => {
+                          const isImg = msg.fileType?.startsWith("image/");
+                          if (isImg) return (
+                            <a href={msg.fileUrl} target="_blank" rel="noreferrer">
+                              <img src={msg.fileUrl} alt={msg.fileName ?? "image"} className="max-w-[260px] w-full object-cover rounded-xl" />
+                            </a>
+                          );
+                          return (() => {
+                            // Add fl_attachment to force download instead of inline display
+                            const dlUrl = msg.fileUrl!.replace(/\/upload\/(?!fl_attachment)/, "/upload/fl_attachment/");
+                            return (
+                            <a
+                              href={dlUrl}
+                              download={msg.fileName ?? "file"}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+                                isMine ? "border-white/20 hover:bg-white/10" : "border-slate-200 hover:bg-slate-200"
+                              } transition-all`}>
+                              <FileText className={`w-6 h-6 shrink-0 ${isMine ? "text-white/70" : "text-slate-500"}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className={`text-xs font-semibold truncate ${isMine ? "text-white" : "text-slate-700"}`}>{msg.fileName ?? "File"}</div>
+                                <div className={`text-[10px] ${isMine ? "text-white/50" : "text-slate-400"}`}>Click to download</div>
+                              </div>
+                              <Download className={`w-4 h-4 shrink-0 ${isMine ? "text-white/50" : "text-slate-400"}`} />
+                            </a>
+                          );
+                          })();
+                        })()}
+                        {/* Text content */}
+                        {msg.content && <p className="px-4 py-2.5">{msg.content}</p>}
+                        <div className={`flex items-center gap-1 px-4 pb-2 ${isMine ? "justify-end" : "justify-start"}`}>
                           <span className={`text-[10px] ${isMine ? "text-white/50" : "text-slate-400"}`}>{timeStr(msg.createdAt)}</span>
                           {isMine && (msg.isRead
                             ? <CheckCheck className="w-3 h-3 text-blue-300" />
@@ -325,17 +414,56 @@ function MessagesContent() {
             </div>
 
             {/* Composer */}
-            <form onSubmit={sendMessage} className="px-4 py-3 border-t border-slate-100 flex gap-3 items-center shrink-0">
-              <input ref={textareaRef as unknown as React.RefObject<HTMLInputElement>}
-                type="text" value={draft}
-                onChange={e => setDraft(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); sendMessage(e as unknown as React.FormEvent); }}}
-                placeholder="Type a message…"
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-5 py-3 text-sm font-[inherit] outline-none focus:border-slate-300 transition-all" />
-              <button type="submit" disabled={sending || !draft.trim()}
-                className="w-11 h-11 bg-[#0a1628] hover:bg-[#1a3a6b] text-white rounded-full flex items-center justify-center transition-all disabled:opacity-40 shrink-0 shadow-sm">
-                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </button>
+            <form onSubmit={sendMessage} className="border-t border-slate-100 shrink-0">
+              {/* Error banner */}
+              {sendError && (
+                <div className="mx-4 mt-3 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+                  <span className="text-red-500 text-xs font-semibold flex-1">{sendError}</span>
+                  <button type="button" onClick={() => setSendError(null)} className="text-red-400 hover:text-red-600">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              {/* File preview strip */}
+              {attachFile && (
+                <div className="flex items-center gap-3 px-4 pt-3">
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex-1 min-w-0">
+                    {attachPreview
+                      ? <img src={attachPreview} alt="preview" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                      : <FileText className="w-8 h-8 text-slate-400 shrink-0" />}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-slate-700 truncate">{attachFile.name}</div>
+                      <div className="text-[10px] text-slate-400">{(attachFile.size / 1024).toFixed(1)} KB</div>
+                    </div>
+                    <button type="button" onClick={removeAttachment} className="p-1 hover:bg-slate-200 rounded-lg transition-all">
+                      <X className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="px-4 py-3 flex gap-3 items-center">
+                {/* Hidden file input */}
+                <input ref={fileInputRef} type="file"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+                  className="hidden" onChange={handleFileSelect} />
+                {/* Attach button */}
+                <button type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-9 h-9 flex items-center justify-center rounded-full border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-[#0a1628] transition-all shrink-0"
+                  title="Attach file">
+                  <Paperclip className="w-4 h-4" />
+                </button>
+                <input ref={textareaRef as unknown as React.RefObject<HTMLInputElement>}
+                  type="text" value={draft}
+                  onChange={e => setDraft(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); sendMessage(e as unknown as React.FormEvent); }}}
+                  placeholder={attachFile ? "Add a caption… (optional)" : "Type a message…"}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-5 py-3 text-sm font-[inherit] outline-none focus:border-slate-300 transition-all" />
+                <button type="submit" disabled={sending || uploading || (!draft.trim() && !attachFile)}
+                  className="w-11 h-11 bg-[#0a1628] hover:bg-[#1a3a6b] text-white rounded-full flex items-center justify-center transition-all disabled:opacity-40 shrink-0 shadow-sm">
+                  {(sending || uploading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </button>
+              </div>
             </form>
           </div>
         ) : (

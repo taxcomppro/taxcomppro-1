@@ -41,8 +41,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ use
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { userId: receiverId } = await params;
-  const { content } = await req.json();
-  if (!content?.trim()) return NextResponse.json({ error: "Content required" }, { status: 400 });
+  const { content, fileUrl, fileName, fileType } = await req.json();
+
+  // Must have content OR a file attachment
+  if (!content?.trim() && !fileUrl) {
+    return NextResponse.json({ error: "Content or file required" }, { status: 400 });
+  }
 
   // Must be connected to message
   const connection = await prisma.connection.findFirst({
@@ -56,8 +60,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ use
   if (!connection) return NextResponse.json({ error: "You must be connected to send messages" }, { status: 403 });
 
   const message = await prisma.message.create({
-    data: { senderId: session.user.id, receiverId, content: content.trim() },
+    data: {
+      senderId: session.user.id,
+      receiverId,
+      content: content?.trim() ?? "",
+      fileUrl:  fileUrl  ?? null,
+      fileName: fileName ?? null,
+      fileType: fileType ?? null,
+    },
   });
 
   return NextResponse.json(message, { status: 201 });
 }
+

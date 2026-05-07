@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import "./globals.css";
 import { ReduxProvider } from "@/store/provider";
 import AtlasWidgetLoader from "@/components/AtlasWidgetLoader";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 
 const urbanist = Urbanist({
@@ -28,12 +29,14 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={urbanist.variable} suppressHydrationWarning>
-      <body>
-        <ReduxProvider>
-          {children}
-          <AtlasWidgetLoader />
-        </ReduxProvider>
+    <html lang="en" className={`${urbanist.variable} dark:bg-[#0f172a]`} suppressHydrationWarning>
+      <body className="bg-white dark:bg-[#0f172a] dark:text-slate-100">
+        <ThemeProvider>
+          <ReduxProvider>
+            {children}
+            <AtlasWidgetLoader />
+          </ReduxProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

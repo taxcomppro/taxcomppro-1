@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { Loader2, MoreHorizontal, Pencil, Trash2, Check, X } from "lucide-react";
+import { Loader2, MoreHorizontal, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { ThumbsUpIcon, Comment01Icon, Share01Icon, SentIcon } from "hugeicons-react";
+import DueDiligenceBadge from "@/components/badges/DueDiligenceBadge";
 
 interface Author {
   id: string; name: string; image: string | null;
   headline: string | null; role: string; tier: string;
+  hasDueDiligenceBadge?: boolean;
 }
 
 interface Comment {
@@ -51,6 +53,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
   const [commentText, setCommentText] = useState("");
   const [postingComment, setPostingComment] = useState(false);
   const [expanded, setExpanded]     = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   // ── edit / delete state ──
   const [menuOpen, setMenuOpen]     = useState(false);
@@ -70,6 +73,18 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // lightbox keyboard navigation
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIdx(null);
+      if (e.key === "ArrowLeft")  setLightboxIdx(p => p !== null && p > 0 ? p - 1 : p);
+      if (e.key === "ArrowRight") setLightboxIdx(p => p !== null && p < post.images.length - 1 ? p + 1 : p);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [lightboxIdx, post.images.length]);
 
   const handleSaveEdit = async () => {
     if (!editText.trim() || saving) return;
@@ -150,7 +165,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
       <div className="bg-white rounded-2xl overflow-hidden transition-all">
       {/* Header */}
       <div className="flex items-start gap-3 p-5 pb-3">
-        <div className="w-12 h-12 rounded-full bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-12 h-12 rounded-xl bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
           {post.author.image
             ? <img src={post.author.image} alt={post.author.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
             : <span className="text-white font-bold text-base">{post.author.name?.[0]?.toUpperCase()}</span>}
@@ -158,6 +173,9 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-[#0a1628] text-base">{post.author.name}</span>
+            {post.author.hasDueDiligenceBadge && (
+              <DueDiligenceBadge size={22} />
+            )}
             {post.author.tier !== "FREE" && (
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${tierBadge[post.author.tier] ?? ""}`}>
                 {post.author.tier === "MARKETPLACE_PLUS" ? "Plus" : post.author.tier === "MARKETPLACE" ? "Market" : post.author.tier}
@@ -226,24 +244,61 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
 
       {/* Images */}
       {post.images && post.images.length > 0 && (
-        <div className={`px-5 pb-4 grid gap-1.5 ${
-          post.images.length === 1 ? "grid-cols-1" :
-          post.images.length === 2 ? "grid-cols-2" :
-          post.images.length === 3 ? "grid-cols-3" :
-          "grid-cols-2"
-        }`}>
-          {post.images.map((url, i) => (
-            <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-              className={`block rounded-xl overflow-hidden bg-slate-100 ${
-                post.images.length === 4 && i === 0 ? "col-span-2" : ""
-              }`}>
-              <img
-                src={url}
-                alt={`Post image ${i + 1}`}
-                className="w-full object-cover max-h-80 hover:opacity-95 transition-opacity"
-              />
-            </a>
-          ))}
+        <div className="px-5 pb-4">
+          {/* ── 1 image ── */}
+          {post.images.length === 1 && (
+            <button onClick={() => setLightboxIdx(0)}
+              className="block w-full rounded-xl overflow-hidden bg-slate-100 cursor-zoom-in">
+              <img src={post.images[0]} alt="Post image 1"
+                className="w-full object-cover max-h-[480px] hover:opacity-95 transition-opacity" />
+            </button>
+          )}
+          {/* ── 2 images ── */}
+          {post.images.length === 2 && (
+            <div className="grid grid-cols-2 gap-1.5">
+              {post.images.map((url, i) => (
+                <button key={i} onClick={() => setLightboxIdx(i)}
+                  className="block rounded-xl overflow-hidden bg-slate-100 cursor-zoom-in">
+                  <img src={url} alt={`Post image ${i + 1}`}
+                    className="w-full h-56 object-cover hover:opacity-95 transition-opacity" />
+                </button>
+              ))}
+            </div>
+          )}
+          {/* ── 3 images: 1 full-width top, 2 below ── */}
+          {post.images.length === 3 && (
+            <div className="grid grid-cols-2 gap-1.5">
+              <button onClick={() => setLightboxIdx(0)}
+                className="col-span-2 block rounded-xl overflow-hidden bg-slate-100 cursor-zoom-in">
+                <img src={post.images[0]} alt="Post image 1"
+                  className="w-full h-60 object-cover hover:opacity-95 transition-opacity" />
+              </button>
+              {post.images.slice(1).map((url, i) => (
+                <button key={i + 1} onClick={() => setLightboxIdx(i + 1)}
+                  className="block rounded-xl overflow-hidden bg-slate-100 cursor-zoom-in">
+                  <img src={url} alt={`Post image ${i + 2}`}
+                    className="w-full h-44 object-cover hover:opacity-95 transition-opacity" />
+                </button>
+              ))}
+            </div>
+          )}
+          {/* ── 4+ images: 2×2 grid, last tile shows +N overlay ── */}
+          {post.images.length >= 4 && (
+            <div className="grid grid-cols-2 gap-1.5">
+              {post.images.slice(0, 4).map((url, i) => (
+                <button key={i} onClick={() => setLightboxIdx(i)}
+                  className="relative block rounded-xl overflow-hidden bg-slate-100 cursor-zoom-in">
+                  <img src={url} alt={`Post image ${i + 1}`}
+                    className="w-full h-44 object-cover hover:opacity-95 transition-opacity" />
+                  {i === 3 && post.images.length > 4 && (
+                    <div className="absolute inset-0 bg-black/55 flex items-center justify-center rounded-xl">
+                      <span className="text-white font-black text-3xl">+{post.images.length - 4}</span>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -297,7 +352,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
             <div className="space-y-3">
               {comments.map(c => (
                 <div key={c.id} className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
                     {c.author.image
                       ? <img src={c.author.image} alt={c.author.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                       : <span className="text-white text-xs font-bold">{c.author.name?.[0]?.toUpperCase()}</span>}
@@ -313,7 +368,7 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
 
           {/* Add comment */}
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
+            <div className="w-7 h-7 rounded-xl bg-[#0a1628] flex items-center justify-center overflow-hidden shrink-0">
               {user?.image
                 ? <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                 : <span className="text-white text-[10px] font-bold">{user?.name?.[0]?.toUpperCase()}</span>}
@@ -353,6 +408,72 @@ export default function PostCard({ post, onUpdate, onDelete }: { post: FeedPost;
             </button>
           </div>
         </div>
+      </div>
+    )}
+
+    {/* ── Image lightbox ── */}
+    {lightboxIdx !== null && post.images.length > 0 && (
+      <div
+        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+        onClick={() => setLightboxIdx(null)}
+      >
+        {/* Close */}
+        <button
+          onClick={() => setLightboxIdx(null)}
+          className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/25 rounded-full flex items-center justify-center text-white transition-all z-10"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Counter */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/40 text-white/80 text-sm font-bold px-4 py-1.5 rounded-full">
+          {lightboxIdx + 1} / {post.images.length}
+        </div>
+
+        {/* Prev */}
+        {lightboxIdx > 0 && (
+          <button
+            onClick={e => { e.stopPropagation(); setLightboxIdx(p => p! - 1); }}
+            className="absolute left-4 w-12 h-12 bg-white/10 hover:bg-white/25 rounded-full flex items-center justify-center text-white transition-all"
+          >
+            <ChevronLeft className="w-7 h-7" />
+          </button>
+        )}
+
+        {/* Image */}
+        <img
+          src={post.images[lightboxIdx]}
+          alt={`Image ${lightboxIdx + 1}`}
+          className="max-h-[90vh] max-w-[90vw] object-contain rounded-xl shadow-2xl select-none"
+          onClick={e => e.stopPropagation()}
+          draggable={false}
+        />
+
+        {/* Next */}
+        {lightboxIdx < post.images.length - 1 && (
+          <button
+            onClick={e => { e.stopPropagation(); setLightboxIdx(p => p! + 1); }}
+            className="absolute right-4 w-12 h-12 bg-white/10 hover:bg-white/25 rounded-full flex items-center justify-center text-white transition-all"
+          >
+            <ChevronRight className="w-7 h-7" />
+          </button>
+        )}
+
+        {/* Thumbnail strip */}
+        {post.images.length > 1 && (
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
+            {post.images.map((url, i) => (
+              <button key={i}
+                onClick={e => { e.stopPropagation(); setLightboxIdx(i); }}
+                className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                  i === lightboxIdx ? "border-white scale-110" : "border-white/30 opacity-60 hover:opacity-90"
+                }`}
+              >
+                <img src={url} alt="" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     )}
   </>

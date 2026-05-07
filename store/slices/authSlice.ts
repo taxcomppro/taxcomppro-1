@@ -7,8 +7,10 @@ export interface AuthUser {
   role: "MEMBER" | "PROFESSIONAL" | "ADMIN";
   tier: "FREE" | "VIP" | "MARKETPLACE" | "MARKETPLACE_PLUS";
   image?: string | null;
+  coverImage?: string | null;
   bio?: string | null;
   headline?: string | null;
+  hasDueDiligenceBadge?: boolean;
 }
 
 interface AuthState {

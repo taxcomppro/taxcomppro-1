@@ -10,6 +10,7 @@ import {
   UserAdd01Icon, Home01Icon, Edit01Icon, Tick01Icon, Cancel01Icon,
 } from "hugeicons-react";
 import { MonitorPlay, ExternalLink } from "lucide-react";
+import DueDiligenceBadge from "@/components/badges/DueDiligenceBadge";
 
 const tierLabel: Record<string, string> = {
   FREE: "Free Member", VIP: "VIP Member",
@@ -26,11 +27,13 @@ export default function FeedLeftPanel() {
   const dispatch  = useAppDispatch();
   const user      = useAppSelector(s => s.auth.user);
 
-  const [editing,   setEditing]   = useState(false);
-  const [headline,  setHeadline]  = useState(user?.headline ?? "");
-  const [bio,       setBio]       = useState(user?.bio ?? "");
-  const [saving,    setSaving]    = useState(false);
-  const [leftAds,   setLeftAds]   = useState<{id:string;title:string;description:string|null;imageUrl:string;linkUrl:string;user:{name:string}}[]>([]);
+  const [editing,         setEditing]         = useState(false);
+  const [headline,        setHeadline]        = useState(user?.headline ?? "");
+  const [bio,             setBio]             = useState(user?.bio ?? "");
+  const [saving,          setSaving]          = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [coverImage,      setCoverImage]      = useState(user?.coverImage ?? "");
+  const [leftAds,         setLeftAds]         = useState<{id:string;title:string;description:string|null;imageUrl:string;linkUrl:string;user:{name:string}}[]>([]);
 
   useEffect(() => {
     fetch("/api/pro-ads/active?placement=LEFT_COLUMN")
@@ -59,6 +62,32 @@ export default function FeedLeftPanel() {
     finally { setSaving(false); }
   };
 
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    try {
+      // Upload to Cloudinary
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "ml_default");
+      const cloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/upload`, { method: "POST", body: fd });
+      const upData = await upRes.json();
+      const url: string = upData.secure_url;
+      if (!url) return;
+      // Save to DB
+      await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coverImage: url }),
+      });
+      setCoverImage(url);
+      dispatch(setUser({ ...user, coverImage: url }));
+    } catch { /* ignore */ }
+    finally { setUploadingBanner(false); }
+  };
+
   const handleCancel = () => {
     setHeadline(user.headline ?? "");
     setBio(user.bio ?? "");
@@ -71,11 +100,17 @@ export default function FeedLeftPanel() {
       {/* ── Profile card ── */}
       <div className="bg-white rounded-2xl overflow-hidden">
 
-        {/* Cover banner */}
-        <div className="h-20 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50] relative">
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-
+        {/* Cover banner — displays coverImage set from profile page, or falls back to gradient */}
+        <div className="h-24 relative">
+          {user.coverImage
+            ? <div className="absolute inset-0 overflow-hidden">
+                <img src={user.coverImage} alt="Profile banner" className="w-full h-full object-cover" />
+              </div>
+            : <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50]">
+                <div className="absolute inset-0 opacity-10"
+                  style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+              </div>
+          }
           {/* Avatar — positioned to straddle the banner bottom edge */}
           <div className="absolute -bottom-9 left-4">
             <div className="w-[72px] h-[72px] rounded-2xl bg-[#0a1628] border-[3px] border-white overflow-hidden flex items-center justify-center shadow-md">
@@ -90,7 +125,10 @@ export default function FeedLeftPanel() {
         <div className="px-4 pt-12 pb-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <div className="font-extrabold text-[#0a1628] text-lg leading-tight truncate">{user.name}</div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-extrabold text-[#0a1628] text-lg leading-tight truncate">{user.name}</span>
+              {user.hasDueDiligenceBadge && <DueDiligenceBadge size={22} />}
+            </div>
               <div className="mt-1.5">
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${tierColor[tier]}`}>
                   {tierLabel[tier]}

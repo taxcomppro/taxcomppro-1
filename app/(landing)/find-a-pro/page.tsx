@@ -12,7 +12,7 @@ interface Pro {
 
 const CERT_FILTERS = ["EA", "CPA", "CFP", "JD", "MBA"];
 
-export default function ProsPage() {
+export default function FindAProPage() {
   const [pros, setPros]       = useState<Pro[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ]             = useState("");
@@ -38,7 +38,7 @@ export default function ProsPage() {
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-semibold mb-4">
             <BadgeCheck className="w-4 h-4 text-amber-400" /> Verified Professionals
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black mb-3">Find a Tax Professional</h1>
+          <h1 className="text-4xl sm:text-5xl font-black mb-3">Find a Pro</h1>
           <p className="text-white/60 text-lg max-w-xl mx-auto">Connect with verified Enrolled Agents, CPAs, and tax specialists.</p>
 
           {/* Search */}
@@ -76,7 +76,7 @@ export default function ProsPage() {
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {pros.map(pro => (
-              <Link key={pro.id} href={`/pros/${pro.id}`}
+              <Link key={pro.id} href={`/find-a-pro/${pro.id}`}
                 className="group bg-white rounded-2xl border border-slate-100 hover:border-[#0a1628]/20 hover:shadow-lg transition-all duration-200 overflow-hidden">
                 {/* Cover */}
                 <div className="h-20 bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] relative">

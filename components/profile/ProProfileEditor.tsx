@@ -9,6 +9,7 @@ import { Tick02Icon, GlobeIcon, Linkedin02Icon, NewTwitterIcon, NoteIcon, UserCi
 import ImageUpload from "@/components/profile/ImageUpload";
 import MediaGallery from "@/components/profile/MediaGallery";
 import ServiceEditor from "@/components/profile/ServiceEditor";
+import DueDiligenceBadge from "@/components/badges/DueDiligenceBadge";
 
 interface Service { id: string; title: string; description: string | null; price: string | null; emoji: string; }
 
@@ -32,7 +33,7 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
 
 const inp = "w-full font-[inherit] text-sm px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-[#0a1628] focus:ring-2 focus:ring-[#0a1628]/10 transition-all bg-white";
 const lbl = "block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5";
-const TABS = ["Basic","Mission","Professional","Social","Services","Media"] as const;
+const TABS = ["Basic","Mission","Professional","Social","Services","Media","Badges"] as const;
 
 export default function ProProfileEditor() {
   const dispatch = useAppDispatch();
@@ -84,7 +85,7 @@ export default function ProProfileEditor() {
       method: "PATCH", headers: {"Content-Type":"application/json"},
       body: JSON.stringify({...f, yearsExperience: f.yearsExperience||null, specialties, certifications, languages, mediaPhotos}),
     });
-    if (res.ok && user) { dispatch(setUser({...user, name: f.name, bio: f.bio, headline: f.headline})); setSaved(true); setTimeout(()=>setSaved(false),3000); }
+    if (res.ok && user) { dispatch(setUser({...user, name: f.name, bio: f.bio, headline: f.headline, coverImage: f.coverImage, image: f.image})); setSaved(true); setTimeout(()=>setSaved(false),3000); }
     setSaving(false);
   };
 
@@ -100,14 +101,15 @@ export default function ProProfileEditor() {
         <div className="flex flex-col sm:flex-row items-end gap-4 -mt-12 mb-5">
           <ImageUpload current={f.image} type="avatar" onUploaded={url=>setF(p=>({...p,image:url}))} uploading={avatarUploading} setUploading={setAvatarUploading} />
           <div className="flex-1 pb-1">
-            <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <span className="text-lg font-black text-[#0a1628]">{user?.name}</span>
-              <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700"><BadgeCheck className="w-3 h-3"/>{user?.role==="ADMIN"?"Admin":"Professional"}</span>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+            <span className="text-lg font-black text-[#0a1628]">{user?.name}</span>
+            {user?.hasDueDiligenceBadge && <DueDiligenceBadge size={22} />}
+            <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700"><BadgeCheck className="w-3 h-3"/>{user?.role==="ADMIN"?"Admin":"Professional"}</span>
+          </div>
             <p className="text-xs text-slate-400">{user?.email}</p>
           </div>
           <div className="flex gap-2 pb-1">
-            {user?.role==="PROFESSIONAL" && <Link href={`/pros/${user.id}`} className="text-xs font-bold border border-[#0a1628] text-[#0a1628] px-4 py-2 rounded-full hover:bg-[#0a1628] hover:text-white transition-all">Public Profile</Link>}
+            {user?.role==="PROFESSIONAL" && <Link href={`/find-a-pro/${user.id}`} className="text-xs font-bold border border-[#0a1628] text-[#0a1628] px-4 py-2 rounded-full hover:bg-[#0a1628] hover:text-white transition-all">Public Profile</Link>}
             <button onClick={save} disabled={saving} className="flex items-center gap-1.5 text-xs font-bold bg-[#0a1628] text-white px-5 py-2 rounded-full hover:bg-[#1a3a6b] transition-all disabled:opacity-40">
               {saving?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Tick02Icon className="w-3.5 h-3.5"/>}{saving?"Saving…":saved?"Saved!":"Save Changes"}
             </button>
@@ -180,9 +182,62 @@ export default function ProProfileEditor() {
 
             {tab==="Media" && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6">
-                <h2 className="font-black text-[#0a1628] text-sm uppercase tracking-widest mb-1">Photos & Media</h2>
+                <h2 className="font-black text-[#0a1628] text-sm uppercase tracking-widest mb-1">Photos &amp; Media</h2>
                 <p className="text-xs text-slate-400 mb-4">Upload up to 12 photos shown on your public profile.</p>
                 <MediaGallery photos={mediaPhotos} onChange={setMediaPhotos}/>
+              </div>
+            )}
+
+            {tab==="Badges" && (
+              <div className="bg-white rounded-2xl border border-slate-100 p-6">
+                <h2 className="font-black text-[#0a1628] text-sm uppercase tracking-widest mb-1">My Achievements</h2>
+                <p className="text-xs text-slate-400 mb-5">Complete activities to unlock badges. Earned badges appear next to your name across the platform.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Due Diligence Badge */}
+                  {(() => {
+                    const earned = user?.hasDueDiligenceBadge ?? false;
+                    return (
+                      <div className={`relative rounded-2xl border-2 p-5 flex items-center gap-4 transition-all ${
+                        earned ? "border-amber-300 bg-amber-50/40" : "border-slate-100 bg-slate-50/50 opacity-60 grayscale"
+                      }`}>
+                        <div className={`w-16 h-16 rounded-xl flex items-center justify-center shrink-0 ${earned ? "bg-amber-100" : "bg-slate-100"}`}>
+                          <img src="/due_dilligence_badge.png" alt="Due Diligence Badge" className="w-12 h-12 object-contain" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-[#0a1628] text-sm">Due Diligence</span>
+                            {earned && (
+                              <span className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">✓ Earned</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                            {earned
+                              ? "Earned! Visible next to your name on posts and your profile."
+                              : "Complete any course or purchase any toolkit to unlock."}
+                          </p>
+                        </div>
+                        {!earned && (
+                          <div className="absolute top-3 right-3 text-slate-300">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {/* Future badges */}
+                  {["Course Creator", "Community Leader", "Top Contributor"].map(name => (
+                    <div key={name} className="relative rounded-2xl border-2 border-slate-100 bg-slate-50/50 opacity-40 grayscale p-5 flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 text-2xl">🏆</div>
+                      <div className="flex-1">
+                        <div className="font-black text-[#0a1628] text-sm">{name}</div>
+                        <p className="text-xs text-slate-400 mt-0.5">Coming soon</p>
+                      </div>
+                      <div className="absolute top-3 right-3 text-slate-300">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

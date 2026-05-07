@@ -38,7 +38,6 @@ export default function ProProfilePage() {
       fetch(`/api/pros/${id}/services`).then(r => r.json() as Promise<Service[]>),
       fetch(`/api/pros/${id}/reviews`).then(r => r.json() as Promise<Review[]>),
     ]).then(([p, s, rv]) => {
-      // Ensure all array fields have safe defaults
       const safePro: Pro = {
         ...p,
         specialties:     p.specialties     ?? [],
@@ -51,7 +50,7 @@ export default function ProProfilePage() {
       setServices(Array.isArray(s) ? s : []);
       setReviews(Array.isArray(rv) ? rv : []);
     })
-      .catch(() => router.push("/pros"))
+      .catch(() => router.push("/find-a-pro"))
       .finally(() => setLoading(false));
   }, [id, router]);
 
@@ -118,23 +117,18 @@ export default function ProProfilePage() {
         <div className="grid lg:grid-cols-3 gap-6 pb-20">
           {/* LEFT */}
           <div className="lg:col-span-2 space-y-5">
-            {/* About */}
             {pro.bio && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6">
                 <h2 className="text-sm font-black text-[#0a1628] uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-1 h-4 bg-[#0a1628] rounded-full"/>About</h2>
                 <p className="text-slate-600 text-sm leading-7 whitespace-pre-line">{pro.bio}</p>
               </div>
             )}
-
-            {/* Mission */}
             {pro.mission && (
               <div className="bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] rounded-2xl p-6 text-white">
                 <h2 className="text-sm font-black uppercase tracking-widest mb-3 text-white/60">My Mission</h2>
                 <p className="text-white text-base font-semibold leading-relaxed italic">"{pro.mission}"</p>
               </div>
             )}
-
-            {/* Services */}
             {services.length>0 && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6">
                 <h2 className="text-sm font-black text-[#0a1628] uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-1 h-4 bg-emerald-500 rounded-full"/>Services Offered</h2>
@@ -155,8 +149,6 @@ export default function ProProfilePage() {
                 </Link>
               </div>
             )}
-
-            {/* Specialties */}
             {pro.specialties.length>0 && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6">
                 <h2 className="text-sm font-black text-[#0a1628] uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-1 h-4 bg-[#0a1628] rounded-full"/>Specialties</h2>
@@ -165,8 +157,6 @@ export default function ProProfilePage() {
                 </div>
               </div>
             )}
-
-            {/* Credentials */}
             {pro.certifications.length>0 && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6">
                 <h2 className="text-sm font-black text-[#0a1628] uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-1 h-4 bg-amber-400 rounded-full"/>Credentials</h2>
@@ -180,8 +170,6 @@ export default function ProProfilePage() {
                 </div>
               </div>
             )}
-
-            {/* Reviews */}
             {reviews.length>0 && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -210,11 +198,9 @@ export default function ProProfilePage() {
                 </div>
               </div>
             )}
-
-            {/* Media gallery */}
             {pro.mediaPhotos.length>0 && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6">
-                <h2 className="text-sm font-black text-[#0a1628] uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-1 h-4 bg-indigo-500 rounded-full"/>Photos & Media</h2>
+                <h2 className="text-sm font-black text-[#0a1628] uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-1 h-4 bg-indigo-500 rounded-full"/>Photos &amp; Media</h2>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {pro.mediaPhotos.map((p,i)=>(
                     <button key={i} onClick={()=>setLightbox(p)} className="aspect-square rounded-xl overflow-hidden hover:opacity-90 transition-opacity">
@@ -224,8 +210,6 @@ export default function ProProfilePage() {
                 </div>
               </div>
             )}
-
-            {/* Courses */}
             {pro.instructorCourses.length>0 && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6">
                 <h2 className="text-sm font-black text-[#0a1628] uppercase tracking-widest mb-4 flex items-center gap-2"><span className="w-1 h-4 bg-indigo-500 rounded-full"/>Courses by {pro.name.split(" ")[0]}</h2>
@@ -262,36 +246,17 @@ export default function ProProfilePage() {
                 <div className="flex items-center justify-between"><span className="text-sm text-slate-500">Member since</span><span className="text-sm font-black text-[#0a1628]">{new Date(pro.createdAt).getFullYear()}</span></div>
               </div>
             </div>
-
-            {/* Social links */}
             {(pro.website||pro.linkedIn||pro.twitter||pro.facebook) && (
               <div className="bg-white rounded-2xl border border-slate-100 p-5">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Online</h3>
                 <div className="space-y-2">
-                  {pro.website && <a href={pro.website.startsWith("http")?pro.website:`https://${pro.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors group">
-                    <div className="w-8 h-8 rounded-lg bg-[#0a1628]/8 flex items-center justify-center shrink-0"><Globe className="w-4 h-4 text-[#0a1628]"/></div>
-                    <span className="text-xs font-semibold text-slate-600 group-hover:text-[#0a1628] truncate flex-1">{pro.website.replace(/^https?:\/\//,"")}</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400 shrink-0"/>
-                  </a>}
-                  {pro.linkedIn && <a href={pro.linkedIn} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-blue-50 transition-colors group">
-                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0"><Linkedin02Icon className="w-4 h-4 text-blue-700"/></div>
-                    <span className="text-xs font-semibold text-slate-600 group-hover:text-blue-700 flex-1">LinkedIn</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400 shrink-0"/>
-                  </a>}
-                  {pro.twitter && <a href={`https://twitter.com/${pro.twitter.replace("@","")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-sky-50 transition-colors group">
-                    <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center shrink-0"><NewTwitterIcon className="w-4 h-4 text-sky-600"/></div>
-                    <span className="text-xs font-semibold text-slate-600 group-hover:text-sky-600 flex-1">@{pro.twitter.replace("@","")}</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400 shrink-0"/>
-                  </a>}
-                  {pro.facebook && <a href={pro.facebook} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-blue-50 transition-colors group">
-                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0"><span className="text-blue-700 font-black text-sm">f</span></div>
-                    <span className="text-xs font-semibold text-slate-600 group-hover:text-blue-700 flex-1">Facebook</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400 shrink-0"/>
-                  </a>}
+                  {pro.website && <a href={pro.website.startsWith("http")?pro.website:`https://${pro.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors group"><div className="w-8 h-8 rounded-lg bg-[#0a1628]/8 flex items-center justify-center shrink-0"><Globe className="w-4 h-4 text-[#0a1628]"/></div><span className="text-xs font-semibold text-slate-600 group-hover:text-[#0a1628] truncate flex-1">{pro.website.replace(/^https?:\/\//,"")}</span><ExternalLink className="w-3 h-3 text-slate-400 shrink-0"/></a>}
+                  {pro.linkedIn && <a href={pro.linkedIn} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-blue-50 transition-colors group"><div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0"><Linkedin02Icon className="w-4 h-4 text-blue-700"/></div><span className="text-xs font-semibold text-slate-600 group-hover:text-blue-700 flex-1">LinkedIn</span><ExternalLink className="w-3 h-3 text-slate-400 shrink-0"/></a>}
+                  {pro.twitter && <a href={`https://twitter.com/${pro.twitter.replace("@","")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-sky-50 transition-colors group"><div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center shrink-0"><NewTwitterIcon className="w-4 h-4 text-sky-600"/></div><span className="text-xs font-semibold text-slate-600 group-hover:text-sky-600 flex-1">@{pro.twitter.replace("@","")}</span><ExternalLink className="w-3 h-3 text-slate-400 shrink-0"/></a>}
+                  {pro.facebook && <a href={pro.facebook} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-blue-50 transition-colors group"><div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0"><span className="text-blue-700 font-black text-sm">f</span></div><span className="text-xs font-semibold text-slate-600 group-hover:text-blue-700 flex-1">Facebook</span><ExternalLink className="w-3 h-3 text-slate-400 shrink-0"/></a>}
                 </div>
               </div>
             )}
-
             <div className="bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] rounded-2xl p-5 text-white text-center">
               <p className="font-black text-base mb-1">Work with {pro.name.split(" ")[0]}</p>
               <p className="text-white/60 text-xs mb-4">Send a message to get started</p>

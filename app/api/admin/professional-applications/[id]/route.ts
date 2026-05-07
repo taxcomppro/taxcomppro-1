@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           type: "PRO_APPROVED",
           title: "🎉 You're now a Professional!",
           message: "Your application has been approved. Your profile now appears in the Pros directory.",
-          link: "/pros/" + app.userId,
+          link: "/find-a-pro/" + app.userId,
         },
       }),
     ]);

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
 import {
-  MessageSquare, Users, Plus, Loader2, Lock, Pin,
+  MessageSquare, Plus, Loader2, Lock, Pin,
   Pencil, Trash2, X, Check,
 } from "lucide-react";
 
@@ -27,7 +27,7 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(d / 30)}mo ago`;
 }
 
-/* ─── Create/Edit Forum Modal (Admin) ─── */
+/* ─── Create/Edit Forum Modal ─── */
 function ForumModal({ initial, onSave, onClose }: {
   initial?: Forum | null;
   onSave: (data: Record<string, unknown>) => Promise<void>;
@@ -44,16 +44,11 @@ function ForumModal({ initial, onSave, onClose }: {
   const [error,       setError]       = useState("");
 
   const autoSlug = (n: string) => n.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-
-  const handleNameChange = (v: string) => {
-    setName(v);
-    if (!initial) setSlug(autoSlug(v));
-  };
+  const handleNameChange = (v: string) => { setName(v); if (!initial) setSlug(autoSlug(v)); };
 
   const handleSave = async () => {
     if (!name.trim() || !slug.trim()) { setError("Name and slug are required"); return; }
-    setSaving(true);
-    setError("");
+    setSaving(true); setError("");
     try {
       await onSave({ name, slug, description, image, badge, isAdminOnly, isPinned });
       onClose();
@@ -71,26 +66,18 @@ function ForumModal({ initial, onSave, onClose }: {
             <X className="w-4 h-4 text-slate-500" />
           </button>
         </div>
-
         <div className="p-6 space-y-4">
           {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-2.5 rounded-xl">{error}</div>}
-
-          {/* Image preview */}
-          {image && (
-            <div className="h-28 rounded-xl overflow-hidden bg-slate-100">
-              <img src={image} alt="" className="w-full h-full object-cover" />
-            </div>
-          )}
-
+          {image && <div className="h-28 rounded-xl overflow-hidden bg-slate-100"><img src={image} alt="" className="w-full h-full object-cover" /></div>}
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <label className="block text-xs font-bold text-slate-600 mb-1">Forum Name *</label>
-              <input value={name} onChange={e => handleNameChange(e.target.value)} placeholder="e.g. IRS Audits & Due Diligence"
+              <input value={name} onChange={e => handleNameChange(e.target.value)} placeholder="e.g. IRS Updates"
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#0a1628]" />
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-bold text-slate-600 mb-1">Slug *</label>
-              <input value={slug} onChange={e => setSlug(e.target.value)} placeholder="irs-audits"
+              <input value={slug} onChange={e => setSlug(e.target.value)} placeholder="irs-updates"
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#0a1628]" />
             </div>
             <div className="col-span-2">
@@ -105,8 +92,11 @@ function ForumModal({ initial, onSave, onClose }: {
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#0a1628]" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">Badge Label</label>
-              <input value={badge} onChange={e => setBadge(e.target.value)} placeholder="e.g. MARKETPLACE"
+              <label className="block text-xs font-bold text-slate-600 mb-1">
+                Badge Label
+                <span className="text-slate-400 font-normal ml-1">(use &quot;IRS&quot; to enable news sync)</span>
+              </label>
+              <input value={badge} onChange={e => setBadge(e.target.value)} placeholder="e.g. IRS"
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#0a1628]" />
             </div>
             <div className="flex flex-col gap-2 justify-end">
@@ -121,11 +111,8 @@ function ForumModal({ initial, onSave, onClose }: {
             </div>
           </div>
         </div>
-
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100">
-          <button onClick={onClose} className="text-sm font-semibold text-slate-500 px-4 py-2 rounded-xl hover:bg-slate-50 transition-all">
-            Cancel
-          </button>
+          <button onClick={onClose} className="text-sm font-semibold text-slate-500 px-4 py-2 rounded-xl hover:bg-slate-50 transition-all">Cancel</button>
           <button onClick={handleSave} disabled={saving}
             className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all disabled:opacity-60">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
@@ -137,6 +124,54 @@ function ForumModal({ initial, onSave, onClose }: {
   );
 }
 
+/* ─── Hardcoded IRS Updates Card ─── */
+function IrsUpdatesCard() {
+  const handleClick = () => {
+    // Trigger auto-init in background so forum+posts exist when user arrives
+    fetch("/api/pro-hub/irs-updates/auto-init").catch(() => {});
+  };
+
+  return (
+    <Link href="/pro-hub/irs-updates" onClick={handleClick}
+      className="group block bg-white rounded-2xl overflow-hidden border border-blue-100 hover:border-blue-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-100/60 transition-all duration-300">
+      {/* Cover */}
+      <div className="h-36 bg-gradient-to-br from-[#0a1628] via-[#0d2d5e] to-[#1a3a6b] relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10"
+          style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "18px 18px" }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+
+        {/* Badges */}
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+          <span className="flex items-center gap-0.5 text-[9px] font-black bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full">
+            <Pin className="w-2.5 h-2.5" /> Pinned
+          </span>
+          <span className="text-[9px] font-black bg-blue-600 text-white px-2 py-0.5 rounded-full">IRS</span>
+        </div>
+
+        {/* Icon */}
+        <div className="absolute bottom-3 left-4 flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-xl">🏛️</div>
+          <div>
+            <div className="font-black text-white text-base leading-tight">IRS Updates</div>
+            <div className="text-slate-300 text-[10px]">irs.gov/newsroom</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-5">
+        <p className="text-sm text-slate-400 leading-relaxed line-clamp-2 mb-3">
+          Latest IRS news releases, tax guidance, and announcements. Auto-synced from the official IRS Newsroom.
+        </p>
+        <div className="flex items-center justify-between text-xs text-slate-400">
+          <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> Live discussions</span>
+          <span className="text-blue-500 font-semibold group-hover:text-blue-700 transition-colors">View updates →</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 /* ─── Forum Card ─── */
 function ForumCard({ f, isAdmin, onEdit, onDelete }: {
   f: Forum; isAdmin: boolean;
@@ -144,58 +179,34 @@ function ForumCard({ f, isAdmin, onEdit, onDelete }: {
   onDelete: (id: string) => void;
 }) {
   const lastActivity = f.posts[0]?.createdAt;
-
   return (
     <div className="group relative bg-white rounded-2xl overflow-hidden border border-slate-100 hover:border-slate-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-300">
-      {/* Admin actions */}
       {isAdmin && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={e => { e.preventDefault(); onEdit(f); }}
-            className="p-1.5 bg-white/90 rounded-lg hover:bg-white shadow-sm">
+          <button onClick={e => { e.preventDefault(); onEdit(f); }} className="p-1.5 bg-white/90 rounded-lg hover:bg-white shadow-sm">
             <Pencil className="w-3 h-3 text-slate-500" />
           </button>
-          <button onClick={e => { e.preventDefault(); onDelete(f.id); }}
-            className="p-1.5 bg-white/90 rounded-lg hover:bg-red-50 shadow-sm">
+          <button onClick={e => { e.preventDefault(); onDelete(f.id); }} className="p-1.5 bg-white/90 rounded-lg hover:bg-red-50 shadow-sm">
             <Trash2 className="w-3 h-3 text-red-400" />
           </button>
         </div>
       )}
-
       <Link href={`/pro-hub/${f.slug}`} className="block">
-        {/* Cover */}
         <div className="h-36 bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] relative overflow-hidden">
           {f.image && <img src={f.image} alt={f.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-
-          {/* Badges */}
           <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
-            {f.isPinned && (
-              <span className="flex items-center gap-0.5 text-[9px] font-black bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full">
-                <Pin className="w-2.5 h-2.5" /> Pinned
-              </span>
-            )}
-            {f.badge && (
-              <span className="text-[9px] font-black bg-[#0a1628] text-[#d4a017] px-2 py-0.5 rounded-full">{f.badge}</span>
-            )}
-            {f.isAdminOnly && (
-              <span className="flex items-center gap-0.5 text-[9px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full">
-                <Lock className="w-2.5 h-2.5" /> Admin Only
-              </span>
-            )}
+            {f.isPinned && <span className="flex items-center gap-0.5 text-[9px] font-black bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full"><Pin className="w-2.5 h-2.5" /> Pinned</span>}
+            {f.badge && <span className="text-[9px] font-black bg-[#0a1628] text-[#d4a017] px-2 py-0.5 rounded-full">{f.badge}</span>}
+            {f.isAdminOnly && <span className="flex items-center gap-0.5 text-[9px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full"><Lock className="w-2.5 h-2.5" /> Admin Only</span>}
           </div>
         </div>
-
-        {/* Content */}
         <div className="p-5">
           <h3 className="font-black text-[#0a1628] text-base leading-snug group-hover:text-[#1a3a6b] transition-colors mb-1">{f.name}</h3>
           <p className="text-sm text-slate-400 leading-relaxed line-clamp-2 mb-3">{f.description}</p>
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{f._count.posts} discussions</span>
-            </div>
-            {lastActivity
-              ? <span>{timeAgo(lastActivity)}</span>
-              : <span className="text-slate-300">No Discussions</span>}
+            <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{f._count.posts} discussions</span>
+            {lastActivity ? <span>{timeAgo(lastActivity)}</span> : <span className="text-slate-300">No Discussions</span>}
           </div>
         </div>
       </Link>
@@ -208,15 +219,18 @@ export default function ProHubPage() {
   const user    = useAppSelector(s => s.auth.user);
   const isAdmin = user?.role === "ADMIN";
 
-  const [forums,      setForums]      = useState<Forum[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [showCreate,  setShowCreate]  = useState(false);
-  const [editForum,   setEditForum]   = useState<Forum | null>(null);
+  const [forums,     setForums]     = useState<Forum[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [editForum,  setEditForum]  = useState<Forum | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch("/api/pro-hub").then(r => r.json()).then(d => setForums(Array.isArray(d) ? d : []))
-      .finally(() => setLoading(false));
+    fetch("/api/pro-hub").then(r => r.json()).then(d => {
+      // Exclude irs-updates from DB list — it's shown as a hardcoded card
+      const all = Array.isArray(d) ? d : [];
+      setForums(all.filter((f: Forum) => f.slug !== "irs-updates"));
+    }).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -299,6 +313,8 @@ export default function ProHubPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* IRS Updates always first */}
+            <IrsUpdatesCard />
             {forums.map(f => (
               <ForumCard key={f.id} f={f} isAdmin={isAdmin}
                 onEdit={f => setEditForum(f)}
@@ -310,12 +326,8 @@ export default function ProHubPage() {
       </div>
 
       {/* Modals */}
-      {showCreate && (
-        <ForumModal onSave={handleCreate} onClose={() => setShowCreate(false)} />
-      )}
-      {editForum && (
-        <ForumModal initial={editForum} onSave={handleEdit} onClose={() => setEditForum(null)} />
-      )}
+      {showCreate && <ForumModal onSave={handleCreate} onClose={() => setShowCreate(false)} />}
+      {editForum  && <ForumModal initial={editForum} onSave={handleEdit} onClose={() => setEditForum(null)} />}
     </div>
   );
 }

@@ -37,7 +37,7 @@ export default function ApplyProfessionalPage() {
         </div>
         <h1 className="text-2xl font-black text-[#0a1628] mb-2">You&apos;re already a Professional!</h1>
         <p className="text-slate-500 mb-6">Your profile appears in the Pros directory.</p>
-        <button onClick={() => router.push(`/pros/${user.id}`)}
+        <button onClick={() => router.push(`/find-a-pro/${user.id}`)}
           className="px-6 py-3 bg-[#0a1628] text-white font-bold rounded-full hover:bg-[#1a3a6b] transition-all">
           View My Profile
         </button>

@@ -13,7 +13,8 @@ import {
   UserGroupIcon, Message01Icon, UserAdd01Icon, BookOpen01Icon,
   Store01Icon, Rocket01Icon, Radio01Icon,
 } from "hugeicons-react";
-import { Gift, Shield, GraduationCap, ChevronDown, Megaphone } from "lucide-react";
+import { Gift, Shield, GraduationCap, ChevronDown, Megaphone, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 type NavItem =
   | { type: "link";     label: string; href: string;  icon: React.ElementType }
@@ -27,16 +28,16 @@ const navItems: NavItem[] = [
     type: "dropdown", label: "Marketplace", icon: ShoppingBag01Icon,
     items: [
       { label: "Marketplace", href: "/marketplace", icon: ShoppingBag01Icon, desc: "" },
-      { label: "Pro Talks",   href: "/pro-talks",   icon: Radio01Icon,        desc: "" },
     ],
   },
   {
     type: "dropdown", label: "Pros", icon: UserGroupIcon,
     items: [
-      { label: "Pro Marketplace", href: "/pros",          icon: UserGroupIcon, desc: "" },
-      { label: "Communities",     href: "/communities",   icon: Rocket01Icon,  desc: "" },
-      { label: "Pro Hub",         href: "/pro-hub",       icon: UserGroupIcon, desc: "" },
-      { label: "Pro Marketing",   href: "/pro-marketing", icon: Megaphone,     desc: "" },
+      { label: "Find a Pro",    href: "/find-a-pro",   icon: UserGroupIcon, desc: "" },
+      { label: "Pro Talks",    href: "/pro-talks",    icon: Radio01Icon,   desc: "" },
+      { label: "Communities",  href: "/communities",  icon: Rocket01Icon,  desc: "" },
+      { label: "Pro Hub",      href: "/pro-hub",      icon: UserGroupIcon, desc: "" },
+      { label: "Pro Marketing",href: "/pro-marketing",icon: Megaphone,     desc: "" },
     ],
   },
 ];
@@ -66,6 +67,7 @@ export default function Navbar() {
   const dispatch = useAppDispatch();
   const storeUser = useAppSelector(s => s.auth.user);
   const user = session?.user;
+  const { theme, setTheme } = useTheme();
 
   // Seed Redux auth state so feed components work in (landing) pages
   useEffect(() => {
@@ -78,7 +80,9 @@ export default function Navbar() {
         if (u) dispatch(setUser({
           id: u.id, email: u.email, name: u.name,
           role: u.role ?? "MEMBER", tier: u.tier ?? "FREE",
-          image: u.image ?? null, bio: u.bio ?? null, headline: u.headline ?? null,
+          image: u.image ?? null, coverImage: u.coverImage ?? null,
+          bio: u.bio ?? null, headline: u.headline ?? null,
+          hasDueDiligenceBadge: u.hasDueDiligenceBadge ?? false,
         }));
       })
       .catch(() => {
@@ -89,6 +93,7 @@ export default function Navbar() {
             role: (u.role as AuthUser["role"]) ?? "MEMBER",
             tier: (u.tier as AuthUser["tier"]) ?? "FREE",
             image: u.image as string | null,
+            coverImage: u.coverImage as string | null,
             bio: u.bio as string | null,
             headline: u.headline as string | null,
           }));
@@ -246,6 +251,17 @@ export default function Navbar() {
 
             {/* Desktop right */}
             <div className="hidden md:flex items-center gap-1 ml-auto">
+              {/* Theme toggle */}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="p-2 text-slate-500 hover:text-[#0a1628] hover:bg-slate-50 rounded-full transition-all"
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {theme === "dark"
+                  ? <Sun className="w-5 h-5" />
+                  : <Moon className="w-5 h-5" />}
+              </button>
+
               {/* Search icon */}
               <button onClick={() => setSearchOpen(true)}
                 className="p-2 text-slate-500 hover:text-[#0a1628] hover:bg-slate-50 rounded-full transition-all">

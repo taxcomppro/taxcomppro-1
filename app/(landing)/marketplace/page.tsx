@@ -245,16 +245,22 @@ function GridCard({ l, authed }: { l: Listing; authed: boolean }) {
 function MarketplaceSidebar({
   user, cat, setCat, canSell,
 }: {
-  user: { name: string | null; image?: string | null; headline?: string | null; tier: string } | null;
+  user: { name: string | null; image?: string | null; headline?: string | null; coverImage?: string | null; tier: string } | null;
   cat: Category; setCat: (c: Category) => void; canSell: boolean;
 }) {
   return (
     <div className="space-y-2.5">
       {user && (
         <div className="bg-white rounded-2xl overflow-hidden">
-          <div className="h-20 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50] relative">
-            <div className="absolute inset-0 opacity-10"
-              style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+          {/* Banner */}
+          <div className="h-24 relative">
+            {user.coverImage
+              ? <div className="absolute inset-0 overflow-hidden"><img src={user.coverImage} alt="" className="w-full h-full object-cover" /></div>
+              : <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50]">
+                  <div className="absolute inset-0 opacity-10"
+                    style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+                </div>
+            }
             <div className="absolute -bottom-9 left-4">
               <div className="w-[72px] h-[72px] rounded-2xl bg-[#0a1628] border-[3px] border-white overflow-hidden flex items-center justify-center shadow-md">
                 {user.image
@@ -379,7 +385,7 @@ function MarketplaceContent() {
           {/* Sidebar */}
           <div className="hidden lg:block self-start sticky top-[100px] h-fit max-h-[calc(100vh-100px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <MarketplaceSidebar
-              user={authedUser ? { ...authedUser, image: authedUser.image ?? null, headline: authedUser.headline ?? null } : null}
+              user={authedUser ? { ...authedUser, image: authedUser.image ?? null, headline: authedUser.headline ?? null, coverImage: authedUser.coverImage ?? null } : null}
               cat={cat} setCat={c => dispatch({ type: "SET_CAT", payload: c })} canSell={canSell}
             />
           </div>

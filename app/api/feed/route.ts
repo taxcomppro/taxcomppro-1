@@ -2,16 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Auto-publish any due scheduled posts (runs on every GET — cheap, indexed query)
+async function publishDuePosts() {
+  await prisma.post.updateMany({
+    where: { scheduledAt: { lte: new Date(), not: null } },
+    data:  { scheduledAt: null },
+  });
+}
+
 // Public GET — no auth required to browse the feed
 export async function GET(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
+
+  await publishDuePosts();
 
   const { searchParams } = new URL(req.url);
   const cursor = searchParams.get("cursor");
   const take = 10;
 
   const posts = await prisma.post.findMany({
-    where: { communityId: null },
+    where: { communityId: null, scheduledAt: null }, // only show published posts
     orderBy: { createdAt: "desc" },
     take,
     ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
@@ -23,32 +33,66 @@ export async function GET(req: NextRequest) {
         take: 3,
       },
       _count: { select: { likes: true, comments: true } },
-      // Only show which posts current user liked when authenticated
       likes: session
         ? { where: { userId: session.user.id }, select: { id: true } }
         : { where: { userId: "__none__" }, select: { id: true } },
     },
   });
 
+  // Batch-compute Due Diligence badge for all unique post authors
+  const authorIds = [...new Set(posts.map(p => p.author.id))];
+  const [completedEnrollments, toolkitPurchases] = await Promise.all([
+    prisma.enrollment.findMany({
+      where: { userId: { in: authorIds }, completedAt: { not: null } },
+      select: { userId: true },
+      distinct: ["userId"],
+    }),
+    prisma.toolkitPurchase.findMany({
+      where: { userId: { in: authorIds } },
+      select: { userId: true },
+      distinct: ["userId"],
+    }),
+  ]);
+  const badgeUserIds = new Set([
+    ...completedEnrollments.map(e => e.userId),
+    ...toolkitPurchases.map(t => t.userId),
+  ]);
+
+  const postsWithBadge = posts.map(p => ({
+    ...p,
+    author: { ...p.author, hasDueDiligenceBadge: badgeUserIds.has(p.author.id) },
+  }));
+
   const nextCursor = posts.length === take ? posts[posts.length - 1].id : null;
-  return NextResponse.json({ posts, nextCursor });
+  return NextResponse.json({ posts: postsWithBadge, nextCursor });
 }
 
-// POST — requires auth to create a post
+
+// POST — requires auth to create a post (immediate or scheduled)
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { content, images, videoUrl } = await req.json();
+  const { content, images, videoUrl, scheduledAt } = await req.json();
   if (!content?.trim() && (!images?.length) && !videoUrl)
     return NextResponse.json({ error: "Content required" }, { status: 400 });
 
+  // Validate scheduledAt — must be at least 1 minute in the future
+  let schedDate: Date | null = null;
+  if (scheduledAt) {
+    schedDate = new Date(scheduledAt);
+    if (isNaN(schedDate.getTime()) || schedDate <= new Date(Date.now() + 60_000)) {
+      return NextResponse.json({ error: "Scheduled time must be at least 1 minute in the future" }, { status: 400 });
+    }
+  }
+
   const post = await prisma.post.create({
     data: {
-      content:  content?.trim() ?? "",
-      images:   images ?? [],
-      videoUrl: videoUrl ?? null,
-      authorId: session.user.id,
+      content:     content?.trim() ?? "",
+      images:      images ?? [],
+      videoUrl:    videoUrl ?? null,
+      scheduledAt: schedDate,
+      authorId:    session.user.id,
     },
     include: {
       author: { select: { id: true, name: true, image: true, headline: true, role: true, tier: true } },

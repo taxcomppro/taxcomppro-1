@@ -36,10 +36,35 @@ export async function POST(req: NextRequest) {
 
   const urls: string[] = [];
   for (const file of files) {
-    const buf    = Buffer.from(await file.arrayBuffer());
+    const buf     = Buffer.from(await file.arrayBuffer());
     const dataUri = `data:${file.type};base64,${buf.toString("base64")}`;
-    const result  = await cloudinary.uploader.upload(dataUri, { folder, resource_type: "image", transformation });
-    urls.push(result.secure_url);
+    const isVideo = file.type.startsWith("video/");
+    const isGif   = file.type === "image/gif";
+
+    if (isVideo && type === "avatar") {
+      // Upload video → serve as looping animated GIF (works with all <img> tags)
+      const result = await cloudinary.uploader.upload(dataUri, {
+        folder, resource_type: "video",
+      });
+      // Build animated GIF delivery URL: loop forever, crop to square, max 6s
+      const base   = result.secure_url.split("/upload/")[0];
+      const pubId  = result.public_id;
+      const gifUrl = `${base}/upload/e_loop,w_400,h_400,c_fill,g_face,f_gif,so_0,eo_6/${pubId}.gif`;
+      urls.push(gifUrl);
+
+    } else if (isGif) {
+      // Animated GIF — preserve animation with fl_animated flag
+      const result = await cloudinary.uploader.upload(dataUri, {
+        folder, resource_type: "image",
+        transformation: [{ width: 400, height: 400, crop: "fill", flags: ["animated"], quality: "auto:good" }],
+      });
+      urls.push(result.secure_url);
+
+    } else {
+      // Static image — normal flow
+      const result = await cloudinary.uploader.upload(dataUri, { folder, resource_type: "image", transformation });
+      urls.push(result.secure_url);
+    }
   }
 
   return NextResponse.json({ urls });

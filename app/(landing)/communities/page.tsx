@@ -322,17 +322,23 @@ export default function CommunitiesPage() {
           <div className="hidden lg:block self-start sticky top-[90px] space-y-3">
             {user && (
               <div className="bg-white rounded-2xl overflow-hidden border border-slate-100">
-                <div className="h-16 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50] relative">
-                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle,white 1px,transparent 1px)", backgroundSize: "20px 20px" }} />
-                  <div className="absolute -bottom-8 left-4">
-                    <div className="w-16 h-16 rounded-2xl border-[3px] border-white bg-[#0a1628] overflow-hidden flex items-center justify-center shadow">
+                {/* Banner */}
+                <div className="h-24 relative">
+                  {user.coverImage
+                    ? <div className="absolute inset-0 overflow-hidden"><img src={user.coverImage} alt="" className="w-full h-full object-cover" /></div>
+                    : <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#1a3a6b] to-[#0d2a50]">
+                        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+                      </div>
+                  }
+                  <div className="absolute -bottom-9 left-4">
+                    <div className="w-[72px] h-[72px] rounded-2xl border-[3px] border-white bg-[#0a1628] overflow-hidden flex items-center justify-center shadow-md">
                       {user.image
                         ? <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                        : <span className="text-white font-black text-xl">{user.name?.[0]?.toUpperCase()}</span>}
+                        : <span className="text-white font-black text-2xl">{user.name?.[0]?.toUpperCase()}</span>}
                     </div>
                   </div>
                 </div>
-                <div className="px-4 pt-10 pb-4">
+                <div className="px-4 pt-12 pb-4 relative z-10">
                   <div className="font-black text-[#0a1628] text-base">{user.name}</div>
                   <div className="text-sm text-slate-400 mt-0.5 mb-3">{user.headline ?? "No headline"}</div>
                   <div className="grid grid-cols-2 gap-2">
