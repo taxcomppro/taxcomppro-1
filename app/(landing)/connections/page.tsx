@@ -245,9 +245,9 @@ export default function ConnectionsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {people.map(p => (
                     <div key={p.id} className="bg-white rounded-2xl p-4 flex items-start gap-3 hover:-translate-y-0.5 transition-all">
-                      <Avatar user={p} />
+                      <Link href={`/member/${p.id}`}><Avatar user={p} /></Link>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-[#0a1628] text-sm truncate">{p.name}</div>
+                        <Link href={`/member/${p.id}`} className="font-bold text-[#0a1628] text-sm truncate hover:text-[#1a3a6b] transition-colors block">{p.name}</Link>
                         {p.headline && <div className="text-xs text-slate-400 truncate mt-0.5">{p.headline}</div>}
                         <RoleBadge role={p.role} />
                       </div>
@@ -282,9 +282,9 @@ export default function ConnectionsPage() {
                       <p className="text-xs font-black uppercase tracking-widest text-slate-400">Received</p>
                       {received.map(r => (
                         <div key={r.id} className="bg-white rounded-2xl p-4 flex items-center gap-3">
-                          <Avatar user={r.requester} />
+                          <Link href={`/member/${r.requester.id}`}><Avatar user={r.requester} /></Link>
                           <div className="flex-1 min-w-0">
-                            <div className="font-bold text-[#0a1628] text-sm">{r.requester.name}</div>
+                            <Link href={`/member/${r.requester.id}`} className="font-bold text-[#0a1628] text-sm hover:text-[#1a3a6b] transition-colors">{r.requester.name}</Link>
                             {r.requester.headline && <div className="text-xs text-slate-400 truncate">{r.requester.headline}</div>}
                             <RoleBadge role={r.requester.role} />
                           </div>
@@ -339,9 +339,9 @@ export default function ConnectionsPage() {
                     const partner = c.requester.id === user.id ? c.receiver : c.requester;
                     return (
                       <div key={c.id} className="bg-white rounded-2xl p-4 flex items-start gap-3 hover:-translate-y-0.5 transition-all">
-                        <Avatar user={partner} />
+                        <Link href={`/member/${partner.id}`}><Avatar user={partner} /></Link>
                         <div className="flex-1 min-w-0">
-                          <div className="font-bold text-[#0a1628] text-sm">{partner.name}</div>
+                          <Link href={`/member/${partner.id}`} className="font-bold text-[#0a1628] text-sm hover:text-[#1a3a6b] transition-colors block">{partner.name}</Link>
                           {partner.headline && <div className="text-xs text-slate-400 truncate mt-0.5">{partner.headline}</div>}
                           <RoleBadge role={partner.role} />
                         </div>
