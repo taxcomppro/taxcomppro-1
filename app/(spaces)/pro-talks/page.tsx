@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
 import { Loader2, X } from "lucide-react";
 import { Mic01Icon, Radio01Icon, UserGroupIcon, Add01Icon } from "hugeicons-react";
@@ -31,6 +32,7 @@ function LiveWave() {
 export default function ProTalksPage() {
   const user    = useAppSelector(s => s.auth.user);
   const isAdmin = user?.role === "ADMIN";
+  const canHost = isAdmin || user?.tier === "MARKETPLACE_PLUS";
   const [spaces, setSpaces]     = useState<Space[]>([]);
   const [loading, setLoading]   = useState(true);
   const [creating, setCreating] = useState(false);
@@ -84,18 +86,25 @@ export default function ProTalksPage() {
               <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">Pro Talks</h1>
               <p className="text-white/40 text-sm mt-2 max-w-sm">Live audio rooms. Join a conversation or start your own.</p>
             </div>
-            {isAdmin && (
-              <button onClick={() => setShowForm(v => !v)}
-                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold transition-all shadow-xl shadow-violet-500/25 shrink-0">
-                <Add01Icon className="w-4 h-4" /> Start a Pro Talk
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {canHost ? (
+                <button onClick={() => setShowForm(v => !v)}
+                  className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold transition-all shadow-xl shadow-violet-500/25 shrink-0">
+                  <Add01Icon className="w-4 h-4" /> Start a Pro Talk
+                </button>
+              ) : (
+                <Link href="/upgrade"
+                  className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/10 border border-white/20 hover:bg-white/15 text-white/80 hover:text-white text-sm font-bold transition-all shrink-0">
+                  <Add01Icon className="w-4 h-4" /> Upgrade Plan to Host
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 pb-16 space-y-6">
-        {showForm && isAdmin && (
+        {showForm && canHost && (
           <div className="relative bg-gradient-to-br from-white/8 to-white/4 border border-white/15 rounded-3xl p-6 backdrop-blur-sm">
             <button onClick={() => setShowForm(false)} className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all"><X className="w-4 h-4" /></button>
             <div className="flex items-center gap-3 mb-5">
@@ -118,7 +127,12 @@ export default function ProTalksPage() {
           <div className="text-center py-24 space-y-5">
             <div className="w-24 h-24 mx-auto rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center"><Mic01Icon className="w-10 h-10 text-white/20" /></div>
             <div><p className="text-white/50 text-xl font-bold mb-1">No Pro Talks live right now</p><p className="text-white/25 text-sm">Check back later or ask an admin to start a conversation</p></div>
-            {isAdmin && <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-violet-600/30 border border-violet-500/30 text-violet-300 text-sm font-bold hover:bg-violet-600/50 transition-all"><Add01Icon className="w-4 h-4" /> Start the first Pro Talk</button>}
+            {canHost && <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-violet-600/30 border border-violet-500/30 text-violet-300 text-sm font-bold hover:bg-violet-600/50 transition-all"><Add01Icon className="w-4 h-4" /> Start the first Pro Talk</button>}
+            {!canHost && (
+              <Link href="/upgrade" className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/10 border border-white/20 text-white/60 text-sm font-bold hover:bg-white/15 transition-all">
+                <Add01Icon className="w-4 h-4" /> Upgrade to Marketplace Plus to Host
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">

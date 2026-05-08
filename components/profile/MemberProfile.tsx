@@ -343,7 +343,8 @@ export default function MemberProfile() {
               ))}
             </div>
 
-            {/* Pro application */}
+            {/* Pro application — only show for non-marketplace users */}
+            {user?.tier !== "MARKETPLACE" && user?.tier !== "MARKETPLACE_PLUS" && (
             <div className="bg-white rounded-2xl p-4">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Professional Status</p>
               {app === undefined && <div className="h-8 bg-slate-100 rounded-lg animate-pulse" />}
@@ -358,6 +359,7 @@ export default function MemberProfile() {
               {app?.status==="PENDING" && <div className="flex items-center gap-2 text-amber-600 bg-amber-50 rounded-xl px-3 py-2 text-xs font-semibold"><Clock className="w-3.5 h-3.5 shrink-0"/>Pending review</div>}
               {app?.status==="REJECTED" && <div className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">{app.note ? `Not approved: ${app.note}` : "Not approved"}</div>}
             </div>
+            )}
           </div>
 
           {/* Edit form */}
@@ -403,11 +405,21 @@ export default function MemberProfile() {
               </div>
             )}
 
+            {/* Become a Pro CTA — only show if user is NOT on marketplace plans */}
+            {user?.tier !== "MARKETPLACE" && user?.tier !== "MARKETPLACE_PLUS" && (
             <div className="bg-gradient-to-br from-[#0a1628] to-[#1a3a6b] rounded-2xl p-5 text-white">
               <div className="flex items-center gap-2 mb-2"><BadgeCheck className="w-5 h-5 text-amber-400"/><span className="font-black text-sm">Become a Pro</span></div>
               <p className="text-white/60 text-xs mb-4">Get verified, appear in the Pros directory, and connect with clients directly.</p>
               <Link href="/apply-professional" className="block text-center text-xs font-bold bg-amber-400 text-[#0a1628] py-2 rounded-lg hover:bg-amber-300 transition-all">Apply Now</Link>
             </div>
+            )}
+            {/* Marketplace Plus badge display */}
+            {user?.tier === "MARKETPLACE_PLUS" && (
+            <div className="bg-gradient-to-br from-[#d4a017] to-[#f0c040] rounded-2xl p-5 text-[#0a1628]">
+              <div className="flex items-center gap-2 mb-2"><BadgeCheck className="w-5 h-5 text-[#0a1628]"/><span className="font-black text-sm">Marketplace Plus Member</span></div>
+              <p className="text-[#0a1628]/70 text-xs">You have full access to all platform features including marketplace listings and Pro Talk hosting.</p>
+            </div>
+            )}
           </div>
         </div>
         )} {/* end activeTab === profile */}

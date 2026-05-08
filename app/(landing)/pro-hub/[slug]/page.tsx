@@ -216,9 +216,8 @@ export default function ForumDetailPage({ params }: { params: Promise<{ slug: st
           <div className="text-5xl">🏛️</div>
           <div className="flex items-center gap-2 text-[#0a1628] font-black text-lg">
             <Loader2 className="w-5 h-5 animate-spin" />
-            Syncing latest IRS news…
+            Syncing…
           </div>
-          <p className="text-sm text-slate-400">Fetching updates from irs.gov/newsroom</p>
         </div>
       )}
       {/* Banner */}
@@ -266,7 +265,7 @@ export default function ForumDetailPage({ params }: { params: Promise<{ slug: st
                 {syncMsg && <span className="text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-xl border border-slate-200">{syncMsg}</span>}
               </div>
             )}
-            {canPost && (
+            {canPost && !isIrsForum && (
               <button onClick={() => setShowNew(true)}
                 className="flex items-center gap-2 bg-[#0a1628] text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-[#1a3a6b] transition-all">
                 <Plus className="w-4 h-4" /> New Discussion

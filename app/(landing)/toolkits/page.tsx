@@ -240,10 +240,10 @@ export default function ToolkitsPage() {
             <h1 className="text-4xl sm:text-5xl font-black mb-4 leading-tight">
               Professional Tax <span className="text-amber-400">Toolkits</span>
             </h1>
-            <p className="text-white/60 text-base max-w-lg mb-6">
+            <p className="text-white text-base max-w-lg mb-6">
               Premium digital resources for tax professionals — each kit includes exclusive tools, templates, and free community membership.
             </p>
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-white/60">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-white">
               {["Instant Download", "2 Months Free Membership", "IRS-Compliant Resources", "One-Time Payment"].map(b => (
                 <div key={b} className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" />{b}</div>
               ))}

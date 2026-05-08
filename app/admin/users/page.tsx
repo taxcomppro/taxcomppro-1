@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Search, ChevronDown, Shield, Briefcase, Crown, Check, Loader2 } from "lucide-react";
 
 type Role = "MEMBER" | "PROFESSIONAL" | "ADMIN";
@@ -32,6 +33,54 @@ function timeAgo(d: string) {
   return new Date(d).toLocaleDateString();
 }
 
+/** Dropdown rendered into document.body via portal — escapes any overflow:hidden container */
+function RoleDropdown({
+  userId, currentRole, anchor, onClose, onSelect,
+}: {
+  userId: string;
+  currentRole: Role;
+  anchor: DOMRect;
+  onClose: () => void;
+  onSelect: (role: Role) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [onClose]);
+
+  const style: React.CSSProperties = {
+    position: "fixed",
+    top: anchor.bottom + 6,
+    right: window.innerWidth - anchor.right,
+    zIndex: 9999,
+    minWidth: 170,
+  };
+
+  return createPortal(
+    <div ref={ref} style={style}
+      className="bg-white border border-slate-200 rounded-xl shadow-2xl p-1.5">
+      {(["MEMBER", "PROFESSIONAL", "ADMIN"] as Role[]).map(r => {
+        const rc = roleConfig[r];
+        const Icon = rc.icon;
+        return (
+          <button key={r} onClick={() => { onSelect(r); onClose(); }}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all hover:bg-slate-50 text-slate-600">
+            <Icon className="w-4 h-4 text-slate-400" />
+            {rc.label}
+            {currentRole === r && <Check className="w-3.5 h-3.5 text-emerald-500 ml-auto" />}
+          </button>
+        );
+      })}
+    </div>,
+    document.body
+  );
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers]           = useState<User[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -39,8 +88,7 @@ export default function AdminUsersPage() {
   const [query, setQuery]           = useState("");
   const [roleFilter, setRoleFilter] = useState<Role | "ALL">("ALL");
   const [loadingId, setLoadingId]   = useState<string | null>(null);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [openDropdown, setOpenDropdown] = useState<{ id: string; rect: DOMRect } | null>(null);
 
   useEffect(() => {
     const p = new URLSearchParams();
@@ -57,19 +105,13 @@ export default function AdminUsersPage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (openDropdown && dropdownRefs.current[openDropdown] && !dropdownRefs.current[openDropdown]!.contains(e.target as Node)) {
-        setOpenDropdown(null);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+  const toggleDropdown = useCallback((userId: string, btn: HTMLButtonElement) => {
+    if (openDropdown?.id === userId) { setOpenDropdown(null); return; }
+    setOpenDropdown({ id: userId, rect: btn.getBoundingClientRect() });
   }, [openDropdown]);
 
   const changeRole = async (userId: string, newRole: Role) => {
-    setLoadingId(userId); setOpenDropdown(null);
+    setLoadingId(userId);
     try {
       const res = await fetch(`/api/admin/users/${userId}/role`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -159,30 +201,13 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-5 py-4 text-xs text-slate-500">{timeAgo(u.createdAt)}</td>
                     <td className="px-5 py-4 text-right">
-                      <div className="relative inline-block" ref={el => { dropdownRefs.current[u.id] = el; }}>
-                        <button onClick={() => setOpenDropdown(openDropdown === u.id ? null : u.id)}
-                          disabled={loadingId === u.id}
-                          className="flex items-center gap-1.5 text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:border-[#0a1628] hover:text-[#0a1628] transition-all disabled:opacity-50">
-                          {loadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Change Role"}
-                          <ChevronDown className="w-3 h-3" />
-                        </button>
-                        {openDropdown === u.id && (
-                          <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 min-w-[160px] p-1.5">
-                            {(["MEMBER","PROFESSIONAL","ADMIN"] as Role[]).map(r => {
-                              const rConf = roleConfig[r];
-                              const RIcon = rConf.icon;
-                              return (
-                                <button key={r} onClick={() => changeRole(u.id, r)}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all hover:bg-slate-50 text-slate-600">
-                                  <RIcon className="w-4 h-4 text-slate-400" />
-                                  {rConf.label}
-                                  {u.role === r && <Check className="w-3.5 h-3.5 text-emerald-500 ml-auto" />}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
+                      <button
+                        onClick={e => toggleDropdown(u.id, e.currentTarget)}
+                        disabled={loadingId === u.id}
+                        className="flex items-center gap-1.5 text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:border-[#0a1628] hover:text-[#0a1628] transition-all disabled:opacity-50 ml-auto">
+                        {loadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Change Role"}
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
                     </td>
                   </tr>
                 );
@@ -193,6 +218,17 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Portal dropdown — renders outside overflow:hidden container */}
+      {openDropdown && (
+        <RoleDropdown
+          userId={openDropdown.id}
+          currentRole={users.find(u => u.id === openDropdown.id)?.role ?? "MEMBER"}
+          anchor={openDropdown.rect}
+          onClose={() => setOpenDropdown(null)}
+          onSelect={role => changeRole(openDropdown.id, role)}
+        />
       )}
     </div>
   );

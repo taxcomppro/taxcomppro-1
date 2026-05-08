@@ -38,15 +38,20 @@ export async function POST(req: NextRequest) {
 
       // Only grant membership if this toolkit includes it
       if (months > 0) {
-        // Always upgrade to VIP (never downgrade from a higher tier)
-        const user = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } });
         const tierOrder: SubscriptionTier[] = ["FREE", "VIP", "MARKETPLACE", "MARKETPLACE_PLUS"];
-        if (tierOrder.indexOf(mTier) > tierOrder.indexOf(user?.tier ?? "FREE")) {
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } });
+        const currentTierRank = tierOrder.indexOf(user?.tier ?? "FREE");
+        const vipRank = tierOrder.indexOf(mTier);
+
+        // Only upgrade tier if current tier is lower than VIP (i.e., FREE only)
+        if (vipRank > currentTierRank) {
           await prisma.user.update({ where: { id: userId }, data: { tier: mTier } });
         }
 
         // ── Set up auto-billing VIP subscription with 60-day trial ────────────
-        if (process.env.STRIPE_VIP_PRICE_ID && customerId) {
+        // ONLY if user does NOT already have Marketplace or Marketplace Plus
+        const isHigherPlan = currentTierRank >= tierOrder.indexOf("MARKETPLACE");
+        if (!isHigherPlan && process.env.STRIPE_VIP_PRICE_ID && customerId) {
           try {
             let paymentMethodId: string | null = null;
             if (session.payment_intent) {
@@ -78,8 +83,19 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Notification message varies: VIP granted vs higher plan retained
+      const user2 = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } });
+      const tierOrder2: SubscriptionTier[] = ["FREE", "VIP", "MARKETPLACE", "MARKETPLACE_PLUS"];
+      const hadHigherPlan = tierOrder2.indexOf(user2?.tier ?? "FREE") > tierOrder2.indexOf("VIP");
       await prisma.notification.create({
-        data: { userId, type: "SYSTEM", title: "🎉 Toolkit Purchase Complete!", message: `Your download is ready! You've received ${months} months of FREE VIP membership. After your trial, membership continues at $39.99/month — cancel anytime.` },
+        data: {
+          userId,
+          type: "SYSTEM",
+          title: "🎉 Toolkit Purchase Complete!",
+          message: hadHigherPlan
+            ? `Your download is ready! Your current ${user2?.tier} membership has been retained.`
+            : `Your download is ready! You've received ${months} months of FREE VIP membership. After your trial, membership continues at $39.99/month — cancel anytime.`,
+        },
       });
     }
 

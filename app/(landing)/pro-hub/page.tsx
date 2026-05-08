@@ -153,7 +153,7 @@ function IrsUpdatesCard() {
           <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-xl">🏛️</div>
           <div>
             <div className="font-black text-white text-base leading-tight">IRS Updates</div>
-            <div className="text-slate-300 text-[10px]">irs.gov/newsroom</div>
+            
           </div>
         </div>
       </div>
@@ -259,12 +259,13 @@ export default function ProHubPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6fb]">
+    <div className="min-h-screen bg-[#f4f6fb] dark:bg-[#0a1628]">
       {/* Hero */}
       <div className="bg-[#0a1628] py-12 px-4 text-center">
         <h1 className="text-4xl font-black text-white mb-2">Pro Hub</h1>
-        <p className="text-slate-400 text-base max-w-lg mx-auto">
-          <span className="text-[#d4a017] font-bold">Ask. Learn. Grow.</span> Where Tax Professionals Connect, Learn from Experienced Peers.
+        <p className="text-white text-base max-w-lg mx-auto">
+          <span className="text-[#d4a017] font-bold text-xl">Ask. Learn. Grow.</span> <br />
+          Where Tax Professionals Connect and Learn from Experienced Peers.
         </p>
       </div>
 
@@ -273,8 +274,8 @@ export default function ProHubPage() {
         {/* Toolbar */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="font-black text-[#0a1628] text-2xl">Discussion Forums</h2>
-            <p className="text-slate-400 text-base mt-0.5">
+            <h2 className="font-black text-[#0a1628] dark:text-white text-2xl">Discussion Forums</h2>
+            <p className="text-slate-400 dark:text-slate-300 text-base mt-0.5">
               {loading ? "Loading…" : `${forums.length} forum${forums.length !== 1 ? "s" : ""}`}
             </p>
           </div>

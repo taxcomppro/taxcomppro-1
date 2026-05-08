@@ -1,43 +1,206 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | TaxComPro",
-  description: "Read the Terms of Service governing your use of the TaxComPro platform.",
+  title: "Terms & Conditions | Tax Compliance Pro",
+  description: "Read the Terms and Conditions governing your use of Tax Compliance Pro LLC services, including the IRS Defense Toolkit, Atlas AI, and all related products.",
 };
 
-export default function TermsPage() {
-  const sections = [
-    { title: "1. Acceptance of Terms", body: `By accessing or using TaxComPro ("Platform"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the Platform. These Terms apply to all visitors, users, and others who access or use the Platform.` },
-    { title: "2. Description of Services", body: `TaxComPro provides an online professional community platform for tax professionals and taxpayers, including a marketplace for professional services, Pro Hub communities, Atlas AI tax assistance, messaging, courses, and other features. Services are provided "as is" and may change over time.` },
-    { title: "3. User Accounts", body: `You must provide accurate and complete information when creating an account. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must notify us immediately of any unauthorized use.` },
-    { title: "4. Professional Disclaimer", body: `TaxComPro is a community and marketplace platform. Content provided by users, professionals, or Atlas AI does not constitute legal, financial, or tax advice. Always consult a licensed tax professional for advice specific to your situation. TaxComPro is not responsible for actions taken based on platform content.` },
-    { title: "5. Marketplace & Payments", body: `Marketplace transactions are between buyers and sellers. TaxComPro facilitates payments via Stripe but is not a party to the transaction. Sellers are solely responsible for services delivered. Subscription billing is recurring and can be cancelled at any time. Refund policies are handled case-by-case.` },
-    { title: "6. Prohibited Conduct", body: `You may not: (a) use the Platform for unlawful purposes; (b) impersonate others or misrepresent credentials; (c) upload harmful, fraudulent, or misleading content; (d) attempt to gain unauthorized access to systems; (e) scrape or harvest data without permission; (f) violate any applicable laws or regulations.` },
-    { title: "7. Intellectual Property", body: `All Platform content, branding, and software are owned by TaxComPro or its licensors. User-generated content remains your property, but you grant TaxComPro a non-exclusive, worldwide license to display and distribute it within the Platform. You may not reproduce Platform materials without written permission.` },
-    { title: "8. Limitation of Liability", body: `To the maximum extent permitted by law, TaxComPro shall not be liable for indirect, incidental, special, consequential, or punitive damages arising from your use of the Platform. Our total liability shall not exceed the amount you paid us in the 12 months preceding the claim.` },
-    { title: "9. Termination", body: `We reserve the right to suspend or terminate your account at any time for violations of these Terms, at our sole discretion. Upon termination, your right to use the Platform ceases immediately. Provisions that by nature should survive termination will do so.` },
-    { title: "10. Changes to Terms", body: `We may update these Terms from time to time. We will notify you of material changes via email or platform notification. Continued use after changes constitutes acceptance. If you disagree with updated Terms, please discontinue use and contact us.` },
-    { title: "11. Governing Law", body: `These Terms are governed by the laws of the United States and the State of Delaware, without regard to conflict of law principles. Any disputes shall be resolved in the courts of Delaware, and you consent to personal jurisdiction in those courts.` },
-    { title: "12. Contact", body: `For questions about these Terms, please contact us at: legal@taxcompro.com` },
-  ];
+const sections = [
+  {
+    title: "1. Acceptance of Terms",
+    body: `By accessing, purchasing, downloading, subscribing to, or using any products, services, software, websites, mobile applications, memberships, communities, AI systems, or digital resources provided by Tax Compliance Pro LLC ("Tax Compliance Pro," "Company," "we," "our," or "us"), including but not limited to the IRS Defense Toolkit, IRS Fine Defense Toolkit, Atlas AI, Atlas Tax Pro Software, and related services (collectively, the "Services"), you agree to be legally bound by these Terms and Conditions ("Terms"). If you do not agree to these Terms, you may not access or use the Services.`,
+  },
+  {
+    title: "2. Description of Services",
+    body: `Tax Compliance Pro LLC provides educational, compliance-support, operational, and business development resources for tax professionals, business owners, and related users. The Services may include, but are not limited to:`,
+    bullets: [
+      "IRS Defense Toolkit",
+      "IRS Fine Defense Toolkit",
+      "Atlas AI tools and software",
+      "Atlas Tax Pro Software",
+      "Website and mobile applications",
+      "Compliance systems and templates",
+      "Training materials and educational content",
+      "Documentation systems",
+      "Professional memberships and communities",
+      "Downloadable resources and forms",
+      "AI-powered tools and recommendations",
+      "Business operational resources",
+      "Digital software platforms and related services",
+    ],
+    footer: "The Services are intended solely for informational, educational, operational, and compliance-support purposes.",
+  },
+  {
+    title: "3. No Legal, Tax, or Professional Advice",
+    body: `The Services do not constitute legal, tax, accounting, financial, compliance, or professional advice. Tax Compliance Pro LLC is not a law firm, accounting firm, or financial advisory firm, and no attorney-client, fiduciary, professional-client, or advisory relationship is created through the use of the Services.`,
+    bullets: [
+      "Verifying all information",
+      "Complying with applicable laws and regulations",
+      "Consulting qualified professionals regarding their specific circumstances",
+    ],
+    bulletPrefix: "Users are solely responsible for:",
+    footer: "Tax laws, IRS procedures, regulations, and compliance standards frequently change. Tax Compliance Pro LLC makes no guarantees regarding audit outcomes, IRS disputes, penalty reductions, compliance success, financial results, or business performance. Your use of the Services is entirely at your own risk.",
+  },
+  {
+    title: "4. AI and Atlas Disclaimer",
+    body: `The Services may include AI-generated content, recommendations, automation tools, chat systems, predictive features, or outputs generated by Atlas AI or related technologies. AI-generated outputs may contain inaccuracies, be incomplete, become outdated, contain errors, or fail to reflect current laws or IRS guidance.`,
+    footer: "You acknowledge and agree that AI outputs are provided for informational purposes only, you must independently verify all AI-generated content, and you will not rely solely on AI-generated information for legal, tax, financial, or compliance decisions. Tax Compliance Pro LLC disclaims all liability arising from reliance upon AI-generated outputs or automated recommendations.",
+  },
+  {
+    title: "5. Eligibility",
+    body: `You must be at least 18 years old and legally capable of entering into a binding agreement to use the Services. If you access the Services on behalf of a business or entity, you represent and warrant that you have authority to bind that entity to these Terms.`,
+  },
+  {
+    title: "6. Accounts and Security",
+    body: `Certain Services may require account registration. You agree to provide accurate and current information, maintain the confidentiality of your login credentials, and immediately notify us of unauthorized account access. You are solely responsible for all activity occurring under your account. You may not share, transfer, sell, or allow unauthorized users to access the Services through your credentials. Tax Compliance Pro LLC reserves the right to suspend or terminate accounts at its sole discretion.`,
+  },
+  {
+    title: "7. Payments, Billing, and Refund Policy",
+    body: `All purchases, subscriptions, memberships, digital downloads, software fees, and recurring payments are final and non-refundable unless otherwise expressly stated in writing. By purchasing or subscribing, you authorize Tax Compliance Pro LLC and its payment processors to charge your selected payment method for one-time purchases, recurring subscriptions, memberships, software fees, renewal charges, and applicable taxes or fees.`,
+    footer: "Recurring subscriptions automatically renew unless canceled prior to the renewal date. Cancellation prevents future billing only and does not entitle you to refunds for prior payments, partial billing periods, unused access, or downloaded materials. Chargebacks, fraudulent disputes, or payment reversals may result in immediate account suspension, termination of Services, collections activity, and legal action where permitted by law.",
+  },
+  {
+    title: "8. Acceptable Use Policy",
+    body: `You agree not to:`,
+    bullets: [
+      "Violate any laws or regulations",
+      "Engage in fraud or deceptive conduct",
+      "Harass or threaten others",
+      "Upload malicious code or harmful software",
+      "Interfere with platform functionality",
+      "Scrape or harvest data",
+      "Reverse engineer software or AI systems",
+      "Reproduce or resell the Services",
+      "Create competing products using the Services",
+      "Use the Services for unlawful tax activity",
+      "Upload confidential taxpayer data without authorization",
+      "Misuse the Services in any manner",
+    ],
+    footer: "We reserve the right to investigate violations and take appropriate action, including account termination.",
+  },
+  {
+    title: "9. Confidential Information and Taxpayer Data",
+    body: `The Services are not intended to serve as secure taxpayer document storage unless expressly stated otherwise. Users are solely responsible for safeguarding confidential information, redacting sensitive taxpayer data, complying with IRS data security requirements, and ensuring lawful handling of personal information.`,
+    footer: "You agree not to upload or transmit Social Security numbers, taxpayer identification numbers, banking data, or confidential taxpayer records unless explicitly authorized and secured through approved systems. Tax Compliance Pro LLC disclaims liability for unauthorized disclosure resulting from user actions, negligence, or misuse.",
+  },
+  {
+    title: "10. Intellectual Property Rights",
+    body: `All content, software, systems, branding, templates, documents, graphics, videos, forms, training materials, AI systems, prompts, workflows, and related materials provided through the Services ("Content") are owned by or licensed to Tax Compliance Pro LLC and protected by intellectual property laws. No ownership rights are transferred to users.`,
+  },
+  {
+    title: "11. Limited License",
+    body: `Subject to your compliance with these Terms, Tax Compliance Pro LLC grants you a limited, revocable, non-exclusive, non-transferable license to access and use the Services for your internal business or personal use only. You may not reproduce, distribute, sublicense, sell, modify, reverse engineer, or commercially exploit the Services or Content without prior written permission.`,
+  },
+  {
+    title: "12. User-Generated Content",
+    body: `You retain ownership of content you submit to the Services ("User Content"). By submitting User Content, you grant Tax Compliance Pro LLC a worldwide, royalty-free, non-exclusive license to use, display, reproduce, and distribute such content solely for operating, improving, and providing the Services. You represent that you own or control the rights to your User Content and that your content does not violate laws or third-party rights. We reserve the right to remove User Content at our discretion.`,
+  },
+  {
+    title: "13. Community Standards",
+    body: `Professional communities and memberships are privileges, not rights. Users must conduct themselves professionally and respectfully at all times. Prohibited conduct includes harassment, hate speech, discrimination, threats, misinformation, abusive behavior, spam, solicitation, profanity, or disruptive conduct. Violations may result in warnings, content removal, suspension, or permanent termination without refund.`,
+  },
+  {
+    title: "14. Third-Party Services",
+    body: `The Services may contain links to third-party platforms, software, tools, or websites. Tax Compliance Pro LLC is not responsible for third-party content, availability, security, accuracy, policies, or business practices. Your use of third-party services is at your own risk.`,
+  },
+  {
+    title: "15. Disclaimer of Warranties",
+    body: `THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY LAW, TAX COMPLIANCE PRO LLC DISCLAIMS ALL WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, ACCURACY, RELIABILITY, SECURITY, AND UNINTERRUPTED AVAILABILITY. We do not guarantee that the Services will be error-free, secure, uninterrupted, or free from harmful components.`,
+  },
+  {
+    title: "16. Limitation of Liability",
+    body: `TO THE MAXIMUM EXTENT PERMITTED BY LAW, TAX COMPLIANCE PRO LLC SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, EXEMPLARY, OR PUNITIVE DAMAGES, INCLUDING IRS PENALTIES, TAX LIABILITIES, BUSINESS LOSSES, LOST PROFITS, DATA LOSS, SERVICE INTERRUPTIONS, OR RELIANCE ON AI OUTPUTS. OUR TOTAL LIABILITY SHALL NOT EXCEED THE TOTAL AMOUNT PAID BY YOU TO TAX COMPLIANCE PRO LLC DURING THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM.`,
+  },
+  {
+    title: "17. Indemnification",
+    body: `You agree to defend, indemnify, and hold harmless Tax Compliance Pro LLC, its affiliates, owners, officers, employees, contractors, licensors, and agents from any claims, liabilities, damages, losses, costs, or expenses arising from your use of the Services, your violation of these Terms, your violation of laws, or your User Content.`,
+  },
+  {
+    title: "18. Arbitration and Class Action Waiver",
+    body: `Any dispute arising from these Terms or the Services shall be resolved exclusively through binding arbitration in the State of Texas. You waive any right to participate in class actions, jury trials, or consolidated proceedings. Arbitration shall be conducted individually.`,
+  },
+  {
+    title: "19. Termination",
+    body: `We reserve the right to suspend or terminate access to the Services at any time, with or without notice, for violations of these Terms or misuse of the Services. Termination does not relieve you of outstanding payment obligations.`,
+  },
+  {
+    title: "20. Changes to Services and Terms",
+    body: `We may modify the Services, pricing, features, software, AI systems, memberships, or these Terms at any time. Updated Terms become effective upon posting. Continued use of the Services constitutes acceptance of revised Terms.`,
+  },
+  {
+    title: "21. Governing Law",
+    body: `These Terms shall be governed by the laws of the State of Texas, without regard to conflict of law principles.`,
+  },
+  {
+    title: "22. Electronic Communications",
+    body: `By using the Services, you consent to receive electronic communications from Tax Compliance Pro LLC, including emails, notices, invoices, disclosures, and account communications. Electronic communications satisfy legal communication requirements.`,
+  },
+  {
+    title: "23. Force Majeure",
+    body: `Tax Compliance Pro LLC shall not be liable for delays or failures resulting from causes beyond reasonable control, including cyberattacks, natural disasters, internet outages, governmental actions, software failures, AI provider interruptions, or third-party service disruptions.`,
+  },
+  {
+    title: "24. Miscellaneous",
+    body: `If any provision of these Terms is deemed unenforceable, the remaining provisions shall remain in effect. Failure to enforce any provision shall not constitute waiver of rights. These Terms constitute the entire agreement between you and Tax Compliance Pro LLC regarding the Services.`,
+  },
+  {
+    title: "25. Contact Information",
+    body: `Tax Compliance Pro LLC\n18640 FM 1488, Suite 509\nMagnolia, TX 77354`,
+    contact: "support@taxcomp.com",
+  },
+];
 
+export default function TermsPage() {
   return (
     <main className="min-h-screen bg-white">
+      {/* Hero */}
       <section className="bg-[#0a1628] pt-24 pb-16 px-6 text-center">
         <p className="text-[#d4a017] font-bold text-sm uppercase tracking-widest mb-4">Legal</p>
-        <h1 className="text-4xl font-black text-white mb-4">Terms of Service</h1>
-        <p className="text-white/50 text-sm">Effective date: January 1, 2025</p>
+        <h1 className="text-4xl font-black text-white mb-4">Terms &amp; Conditions</h1>
+        <p className="text-white/50 text-sm">Effective Date: May 1, 2026 &nbsp;·&nbsp; Tax Compliance Pro LLC</p>
       </section>
 
+      {/* Content */}
       <section className="max-w-3xl mx-auto px-6 py-16 space-y-10">
-        {sections.map(s => (
-          <div key={s.title}>
-            <h2 className="text-lg font-black text-[#0a1628] mb-3">{s.title}</h2>
-            <p className="text-slate-600 text-sm leading-relaxed">{s.body}</p>
+        {sections.map((s) => (
+          <div key={s.title} className="border-b border-slate-100 pb-8 last:border-0">
+            <h2 className="text-base font-black text-[#0a1628] mb-3 uppercase tracking-wide">{s.title}</h2>
+            <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">{s.body}</p>
+
+            {s.bulletPrefix && (
+              <p className="text-slate-600 text-sm mt-3 leading-relaxed">{s.bulletPrefix}</p>
+            )}
+
+            {s.bullets && (
+              <ul className="mt-2 space-y-1.5 pl-4">
+                {s.bullets.map((b) => (
+                  <li key={b} className="flex items-start gap-2 text-sm text-slate-600">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#d4a017] shrink-0" />
+                    {b}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {s.footer && (
+              <p className="text-slate-600 text-sm mt-3 leading-relaxed">{s.footer}</p>
+            )}
+
+            {s.contact && (
+              <p className="text-sm mt-2">
+                <a href={`mailto:${s.contact}`} className="text-[#0a1628] font-bold hover:text-[#d4a017] transition-colors">
+                  {s.contact}
+                </a>
+              </p>
+            )}
           </div>
         ))}
-        <div className="border-t border-slate-100 pt-8 text-center text-slate-400 text-xs">
-          Last updated: January 2025 · <a href="mailto:legal@taxcompro.com" className="hover:text-[#0a1628] transition-colors">legal@taxcompro.com</a>
+
+        <div className="pt-4 text-center text-slate-400 text-xs">
+          Last updated: May 2026 &nbsp;·&nbsp;
+          <a href="mailto:support@taxcomp.com" className="hover:text-[#0a1628] transition-colors">
+            support@taxcomp.com
+          </a>
         </div>
       </section>
     </main>

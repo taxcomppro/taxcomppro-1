@@ -4,6 +4,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { Loader2, CheckCircle2, Lock } from "lucide-react";
+import { useAppSelector } from "@/store/hooks";
+
+// Tier hierarchy: higher index = higher tier
+const TIER_RANK: Record<string, number> = {
+  FREE: 0,
+  VIP: 1,
+  MARKETPLACE: 2,
+  MARKETPLACE_PLUS: 3,
+};
 
 const plans = [
   {
@@ -77,6 +86,9 @@ const plans = [
 
 export default function UpgradePage() {
   const [loading, setLoading] = useState<string | null>(null);
+  const user = useAppSelector(s => s.auth.user);
+  const userTier = user?.tier ?? "FREE";
+  const userRank = TIER_RANK[userTier] ?? 0;
 
   const handleUpgrade = async (tier: string) => {
     setLoading(tier);
@@ -110,75 +122,95 @@ export default function UpgradePage() {
 
         {/* Plans grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
-          {plans.map((plan) => (
-            <div key={plan.name} className={`relative bg-white rounded-2xl flex flex-col overflow-hidden transition-all hover:-translate-y-1 ${
-              plan.popular
-                ? "shadow-xl border-2 border-[#d4a017]"
-                : "shadow-md border border-slate-200 hover:shadow-xl"
-            }`}>
-              {/* Gold top accent bar */}
-              {plan.popular && <div className="h-1.5 w-full bg-gradient-to-r from-[#f0c040] to-[#d4a017]" />}
+          {plans.map((plan) => {
+            const planRank = TIER_RANK[plan.tier] ?? 0;
+            const isCurrentPlan = userTier === plan.tier;
+            const isLowerTier = planRank < userRank;
+            const showCurrentPlan = isCurrentPlan || isLowerTier;
 
-              {/* Badge */}
-              {plan.badge && (
-                <div className="absolute top-4 right-4">
-                  <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-wide ${
-                    plan.popular
-                      ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628]"
-                      : "bg-[#0a1628] text-white"
-                  }`}>{plan.badge}</span>
-                </div>
-              )}
+            return (
+              <div key={plan.name} className={`relative bg-white rounded-2xl flex flex-col overflow-hidden transition-all hover:-translate-y-1 ${
+                plan.popular
+                  ? "shadow-xl border-2 border-[#d4a017]"
+                  : "shadow-md border border-slate-200 hover:shadow-xl"
+              }`}>
+                {/* Gold top accent bar */}
+                {plan.popular && <div className="h-1.5 w-full bg-gradient-to-r from-[#f0c040] to-[#d4a017]" />}
 
-              <div className="p-7 flex flex-col flex-1">
-                {/* Plan image */}
-                <div className="flex justify-center mb-5">
-                  <Image src={plan.img} alt={plan.name} width={130} height={130} className="object-contain" />
-                </div>
-
-                {/* Name */}
-                <h3 className="text-center font-black text-base text-[#0a1628] mb-1">{plan.name}</h3>
-
-                {/* Savings */}
-                {plan.savings && (
-                  <p className="text-center text-xs font-bold text-[#d4a017] mb-3">{plan.savings}</p>
-                )}
-
-                {/* Price */}
-                <div className="flex items-baseline justify-center gap-1 mb-6">
-                  <span className="text-4xl font-black text-[#0a1628]">{plan.label}</span>
-                  <span className="text-sm text-slate-400">{plan.period}</span>
-                </div>
-
-                {/* Features */}
-                <ul className="space-y-2.5 mb-7 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex gap-2 items-start text-sm text-slate-600">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 mt-px text-emerald-500" />{f}
-                    </li>
-                  ))}
-                </ul>
-
-                {/* CTA */}
-                {plan.tier === "FREE" ? (
-                  <div className="w-full text-center text-sm font-bold py-3.5 rounded-full bg-slate-100 text-slate-400 cursor-default">
-                    {plan.cta}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleUpgrade(plan.tier)}
-                    disabled={loading === plan.tier}
-                    className={`w-full text-sm font-bold py-3.5 rounded-full transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${
+                {/* Badge */}
+                {plan.badge && !showCurrentPlan && (
+                  <div className="absolute top-4 right-4">
+                    <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-wide ${
                       plan.popular
-                        ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] hover:shadow-[0_0_20px_rgba(212,160,23,0.4)]"
-                        : "bg-[#0a1628] text-white hover:bg-[#1a3a6b]"
-                    }`}>
-                    {loading === plan.tier ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : plan.cta}
-                  </button>
+                        ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628]"
+                        : "bg-[#0a1628] text-white"
+                    }`}>{plan.badge}</span>
+                  </div>
                 )}
+
+                {/* "Current Plan" badge when user is on this tier or above */}
+                {showCurrentPlan && (
+                  <div className="absolute top-4 right-4">
+                    <span className="text-xs font-black px-3 py-1 rounded-full uppercase tracking-wide bg-emerald-500 text-white">
+                      {isCurrentPlan ? "Current Plan" : "Included"}
+                    </span>
+                  </div>
+                )}
+
+                <div className="p-7 flex flex-col flex-1">
+                  {/* Plan image */}
+                  <div className="flex justify-center mb-5">
+                    <Image src={plan.img} alt={plan.name} width={130} height={130} className="object-contain" />
+                  </div>
+
+                  {/* Name */}
+                  <h3 className="text-center font-black text-base text-[#0a1628] mb-1">{plan.name}</h3>
+
+                  {/* Savings */}
+                  {plan.savings && !showCurrentPlan && (
+                    <p className="text-center text-xs font-bold text-[#d4a017] mb-3">{plan.savings}</p>
+                  )}
+
+                  {/* Price */}
+                  <div className="flex items-baseline justify-center gap-1 mb-6">
+                    <span className="text-4xl font-black text-[#0a1628]">{plan.label}</span>
+                    <span className="text-sm text-slate-400">{plan.period}</span>
+                  </div>
+
+                  {/* Features */}
+                  <ul className="space-y-2.5 mb-7 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex gap-2 items-start text-sm text-slate-600">
+                        <CheckCircle2 className="w-4 h-4 shrink-0 mt-px text-emerald-500" />{f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA */}
+                  {showCurrentPlan ? (
+                    <div className="w-full text-center text-sm font-bold py-3.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 cursor-default">
+                      {isCurrentPlan ? "✓ Current Plan" : "✓ Included in Your Plan"}
+                    </div>
+                  ) : plan.tier === "FREE" ? (
+                    <div className="w-full text-center text-sm font-bold py-3.5 rounded-full bg-slate-100 text-slate-400 cursor-default">
+                      {plan.cta}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleUpgrade(plan.tier)}
+                      disabled={loading === plan.tier}
+                      className={`w-full text-sm font-bold py-3.5 rounded-full transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${
+                        plan.popular
+                          ? "bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] hover:shadow-[0_0_20px_rgba(212,160,23,0.4)]"
+                          : "bg-[#0a1628] text-white hover:bg-[#1a3a6b]"
+                      }`}>
+                      {loading === plan.tier ? <><Loader2 className="w-4 h-4 animate-spin" />Redirecting…</> : plan.cta}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Trust strip */}

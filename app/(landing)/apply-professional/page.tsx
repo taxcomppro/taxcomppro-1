@@ -99,7 +99,11 @@ export default function ApplyProfessionalPage() {
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
             <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
             <h2 className="font-black text-[#0a1628] text-lg mb-1">Application Approved!</h2>
-            <p className="text-slate-500 text-sm">You are now a verified professional.</p>
+            <p className="text-slate-500 text-sm mb-4">You are now a verified professional.</p>
+            <button onClick={() => router.push("/profile")}
+              className="px-6 py-2.5 bg-[#0a1628] text-white font-bold rounded-full hover:bg-[#1a3a6b] transition-all text-sm">
+              Go to My Profile
+            </button>
           </div>
         )}
 

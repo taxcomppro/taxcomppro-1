@@ -1,45 +1,100 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | TaxComPro",
-  description: "Learn how TaxComPro collects, uses, and protects your personal information.",
+  title: "Privacy Policy | Tax Compliance Pro",
+  description: "Learn how Tax Compliance Pro collects, uses, stores, and safeguards your personal information.",
 };
 
-export default function PrivacyPage() {
-  const sections = [
-    { title: "1. Information We Collect", body: `We collect information you provide directly (name, email, professional credentials, payment info), information generated through use of the Platform (messages, posts, activity logs), and technical data (IP address, browser type, device identifiers, cookies). We do not sell your personal data.` },
-    { title: "2. How We Use Your Information", body: `We use your data to: provide and improve our services; process payments securely via Stripe; send service-related notifications; personalize your experience; enforce our Terms of Service; comply with legal obligations; and communicate about your account. We do not use your data for third-party advertising.` },
-    { title: "3. Data Sharing", body: `We share data only with: (a) service providers under strict confidentiality agreements (e.g. Stripe for payments, Vercel for hosting); (b) other users only as necessary for platform features (e.g., your public profile); (c) law enforcement when legally required. We never sell personal data to third parties.` },
-    { title: "4. Cookies & Tracking", body: `We use essential cookies for authentication and security, and analytics cookies to improve platform performance. You can manage cookie preferences via your browser settings. Disabling essential cookies may affect platform functionality. See our Cookie Policy for full details.` },
-    { title: "5. Data Security", body: `We implement industry-standard security including TLS encryption, hashed passwords, access controls, and regular security audits. However, no system is 100% secure. You are responsible for keeping your account credentials confidential. Notify us immediately of any suspected breach.` },
-    { title: "6. Data Retention", body: `We retain your account data for as long as your account is active. After account deletion, we may retain certain data for up to 90 days for legal and audit purposes, and anonymized analytics data indefinitely. Financial transaction records are retained as required by law (typically 7 years).` },
-    { title: "7. Your Rights", body: `Depending on your location, you may have rights to: access your personal data; correct inaccurate data; request deletion; restrict processing; data portability; and withdraw consent. To exercise rights, contact privacy@taxcompro.com. We will respond within 30 days.` },
-    { title: "8. Children's Privacy", body: `TaxComPro is not intended for users under 18. We do not knowingly collect data from minors. If you believe a minor has provided us data, please contact us immediately and we will delete it promptly.` },
-    { title: "9. Third-Party Links", body: `The Platform may contain links to third-party websites. We are not responsible for the privacy practices of those sites. We encourage you to review their privacy policies before providing any personal information.` },
-    { title: "10. Changes to This Policy", body: `We may update this Privacy Policy periodically. We will notify you of material changes via email or an in-platform notice. Continued use after changes constitutes acceptance. The effective date at the top reflects the latest revision.` },
-    { title: "11. Contact Us", body: `For privacy-related questions or requests, contact: privacy@taxcompro.com. For general support: support@taxcompro.com.` },
-  ];
+const sections = [
+  {
+    title: "1. Information We Collect",
+    body: `When you register for TaxCompPro, we collect information you provide directly to us, including your name, email address, business name, title/role, city, state, and profile description. We also collect information about your activity on the platform, including posts, comments, messages, and connections.
 
+In addition to information you voluntarily provide, we may automatically collect certain data when you visit our website. This may include IP address, browser type, device information, pages visited, referring URLs, and usage data. This information is collected through cookies, log files, and similar technologies to help us understand how users interact with our website and to improve functionality and user experience.`,
+  },
+  {
+    title: "2. How We Use Your Information",
+    body: `We use the information we collect to provide, maintain, and improve our services, including to create and manage your account, facilitate connections between members, enable private messaging, display your profile in the member directory, and send you service-related notifications.
+
+We use collected information to provide and manage our products and services, process payments, communicate with users, respond to inquiries, improve website performance, enforce policies, and comply with legal obligations. We may also use your information to send updates, promotional communications, or service-related notices. You may opt out of marketing communications at any time by following the unsubscribe instructions provided.`,
+  },
+  {
+    title: "3. Information Sharing",
+    body: `Your profile information is visible to other registered members of the TaxCompPro community. We do not sell your personal information to third parties.
+
+Tax Compliance Pros does not sell or rent your personal information. We may share information with trusted third-party service providers who assist with payment processing, website hosting, analytics, communications, or business operations, provided they are contractually obligated to protect your information. Information may also be disclosed if required by law, court order, or governmental request, or to protect our rights, property, or users.`,
+  },
+  {
+    title: "4. Cookies and Tracking Technologies",
+    body: `Our website may use cookies and similar tracking technologies to enhance performance, personalize content, analyze traffic, and support marketing efforts. Cookies are small data files stored on your device. You may choose to disable cookies through your browser settings; however, doing so may limit certain features or functionality of the website.`,
+  },
+  {
+    title: "5. Data Security",
+    body: `We implement reasonable administrative, technical, and physical safeguards designed to protect your personal information from unauthorized access, disclosure, alteration, or destruction. While we strive to protect your information, no method of transmission over the internet or electronic storage is completely secure, and we cannot guarantee absolute security.`,
+  },
+  {
+    title: "6. Data Retention",
+    body: `We retain personal information only for as long as necessary to fulfill the purposes outlined in this Privacy Policy, comply with legal obligations, resolve disputes, and enforce agreements. When information is no longer needed, it is securely deleted or anonymized.`,
+  },
+  {
+    title: "7. Your Rights and Choices",
+    body: `Depending on your location, you may have certain rights regarding your personal information, including the right to access, correct, update, or request deletion of your data. You may also have the right to object to or restrict certain processing activities. Requests can be submitted using the contact information provided below, subject to applicable legal requirements.`,
+  },
+  {
+    title: "8. Third-Party Links",
+    body: `Our website may contain links to third-party websites or services. We are not responsible for the privacy practices, content, or security of those external sites. We encourage users to review the privacy policies of any third-party websites they visit.`,
+  },
+  {
+    title: "9. Children's Privacy",
+    body: `Our services and website are not intended for individuals under the age of 18. We do not knowingly collect personal information from children. If we become aware that personal information has been collected from a minor, we will take steps to delete it promptly.`,
+  },
+  {
+    title: "10. Changes to This Privacy Policy",
+    body: `Tax Compliance Pros reserves the right to update or modify this Privacy Policy at any time. Any changes will be effective immediately upon posting on this page. Continued use of the website after changes are posted constitutes acceptance of the updated policy.`,
+  },
+  {
+    title: "11. Contact Information",
+    body: `If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact Tax Compliance Pros through the contact information provided on our website or via email at support@taxcomp.com.`,
+    contact: "support@taxcomp.com",
+  },
+];
+
+export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-white">
+      {/* Hero */}
       <section className="bg-[#0a1628] pt-24 pb-16 px-6 text-center">
         <p className="text-[#d4a017] font-bold text-sm uppercase tracking-widest mb-4">Legal</p>
         <h1 className="text-4xl font-black text-white mb-4">Privacy Policy</h1>
-        <p className="text-white/50 text-sm">Effective date: January 1, 2025</p>
+        <p className="text-white/50 text-sm">Tax Compliance Pros · Last Updated: May 2026</p>
       </section>
 
+      {/* Content */}
       <section className="max-w-3xl mx-auto px-6 py-16 space-y-10">
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-sm text-blue-800">
-          <strong>Summary:</strong> We collect only what we need, never sell your data, protect it with industry-standard security, and give you full control over your information.
+        {/* Summary banner */}
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-sm text-blue-800 leading-relaxed">
+          <strong>Summary:</strong> Tax Compliance Pros respects your privacy and is committed to protecting the personal information you share with us. We collect only what we need, never sell your data, protect it with reasonable safeguards, and give you control over your information.
         </div>
-        {sections.map(s => (
-          <div key={s.title}>
-            <h2 className="text-lg font-black text-[#0a1628] mb-3">{s.title}</h2>
-            <p className="text-slate-600 text-sm leading-relaxed">{s.body}</p>
+
+        {sections.map((s) => (
+          <div key={s.title} className="border-b border-slate-100 pb-8 last:border-0">
+            <h2 className="text-base font-black text-[#0a1628] mb-3 uppercase tracking-wide">{s.title}</h2>
+            <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">{s.body}</p>
+            {s.contact && (
+              <p className="text-sm mt-2">
+                <a href={`mailto:${s.contact}`} className="text-[#0a1628] font-bold hover:text-[#d4a017] transition-colors">
+                  {s.contact}
+                </a>
+              </p>
+            )}
           </div>
         ))}
-        <div className="border-t border-slate-100 pt-8 text-center text-slate-400 text-xs">
-          Last updated: January 2025 · <a href="mailto:privacy@taxcompro.com" className="hover:text-[#0a1628] transition-colors">privacy@taxcompro.com</a>
+
+        <div className="pt-4 text-center text-slate-400 text-xs">
+          Last updated: May 2026 &nbsp;·&nbsp;
+          <a href="mailto:support@taxcomp.com" className="hover:text-[#0a1628] transition-colors">
+            support@taxcomp.com
+          </a>
         </div>
       </section>
     </main>

@@ -13,6 +13,18 @@
 /* Enable class-based dark mode in Tailwind v4 */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Dark mode: navbar nav links always white, gold on hover */
+.dark header nav a,
+.dark header nav button {
+  color: #ffffff !important;
+}
+.dark header nav a:hover,
+.dark header nav button:hover {
+  color: #f0c040 !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { font-family: var(--font-urbanist, "Urbanist"), sans-serif; -webkit-font-smoothing: antialiased; }
