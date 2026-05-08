@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 import {
@@ -40,6 +40,18 @@ function Stars({ value, size="sm" }: { value:number; size?:"sm"|"lg" }) {
 }
 
 export default function CourseDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-8 h-8 text-[#d4a017] animate-spin" />
+      </div>
+    }>
+      <CourseDetailContent />
+    </Suspense>
+  );
+}
+
+function CourseDetailContent() {
   const { slug } = useParams<{ slug:string }>();
   const router = useRouter();
   const { data: session } = useSession();
@@ -48,9 +60,11 @@ export default function CourseDetailPage() {
   const [loading, setLoading]       = useState(true);
   const [enrolling, setEnrolling]   = useState(false);
   const [enrolled, setEnrolled]     = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [openSec, setOpenSec]       = useState<Set<string>>(new Set());
   const [allOpen, setAllOpen]       = useState(false);
   const [toastMsg, setToastMsg]     = useState("");
+  const searchParams = useSearchParams();
 
   // Rating state
   const [myRating, setMyRating]     = useState(0);
@@ -71,6 +85,34 @@ export default function CourseDetailPage() {
       .finally(()=>setLoading(false));
   }, [slug]);
 
+  // Handle return from Stripe for paid course — verify payment and create enrollment
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    if (!sessionId || !slug) return;
+    // Clean URL
+    window.history.replaceState({}, "", `/courses/${slug}`);
+    setCheckoutLoading(true);
+    fetch("/api/stripe/verify-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId }),
+    })
+      .then(r => r.json())
+      .then(() => {
+        // Refresh course data so isEnrolled flips to true
+        return fetch(`/api/courses/${slug}`).then(r => r.ok ? r.json() : null);
+      })
+      .then(d => {
+        if (!d) return;
+        setCourse(d); setEnrolled(d.isEnrolled);
+        showToast("🎉 Purchase complete! Start learning now.");
+      })
+      .catch(() => {})
+      .finally(() => setCheckoutLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   const toggleSec = (id:string) => setOpenSec(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
   const toggleAll = () => {
     if (allOpen) { setOpenSec(new Set()); setAllOpen(false); }
@@ -81,12 +123,37 @@ export default function CourseDetailPage() {
   const handleEnroll = async () => {
     if (!session) { router.push(`/login?callbackUrl=/courses/${slug}`); return; }
     if (enrolled) { router.push(`/courses/${slug}/learn`); return; }
+
+    // Paid course — go through Stripe
+    if (course && !course.isFree && course.price > 0) {
+      setCheckoutLoading(true);
+      try {
+        const res = await fetch("/api/stripe/course-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug }),
+        });
+        const data = await res.json() as { url?: string; error?: string; alreadyEnrolled?: boolean };
+        if (data.alreadyEnrolled) {
+          setEnrolled(true);
+          router.push(`/courses/${slug}/learn`);
+          return;
+        }
+        if (data.url) { window.location.href = data.url; return; }
+        showToast(data.error ?? "Could not initiate checkout.");
+      } finally {
+        setCheckoutLoading(false);
+      }
+      return;
+    }
+
+    // Free course — enroll directly
     setEnrolling(true);
     try {
       const res = await fetch(`/api/courses/${slug}/enroll`,{method:"POST"});
       if (res.ok) {
         setEnrolled(true);
-        showToast("ðŸŽ‰ Enrolled! Start learning now.");
+        showToast("🎉 Enrolled! Start learning now.");
         setCourse(prev=>prev?{...prev,isEnrolled:true,_count:{enrollments:prev._count.enrollments+1}}:prev);
       } else { const e=await res.json(); showToast(e.error??"Something went wrong."); }
     } finally { setEnrolling(false); }
@@ -101,9 +168,12 @@ export default function CourseDetailPage() {
     } finally { setRS(false); }
   };
 
-  if (loading) return (
+  if (loading || checkoutLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <Loader2 className="w-8 h-8 text-[#d4a017] animate-spin"/>
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 text-[#d4a017] animate-spin mx-auto mb-2"/>
+        {checkoutLoading && <p className="text-sm text-slate-500">Activating your enrollment…</p>}
+      </div>
     </div>
   );
   if (!course) return (
@@ -392,11 +462,11 @@ export default function CourseDetailPage() {
                     </div>
                   </div>
                 )}
-                <button onClick={handleEnroll} disabled={enrolling}
+                <button onClick={handleEnroll} disabled={enrolling || checkoutLoading}
                   className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#f0c040] to-[#d4a017] text-[#0a1628] font-black py-3.5 rounded-xl hover:shadow-lg hover:shadow-[#f0c040]/30 transition-all disabled:opacity-60 text-base">
-                  {enrolling ? <Loader2 className="w-5 h-5 animate-spin"/>
+                  {(enrolling || checkoutLoading) ? <Loader2 className="w-5 h-5 animate-spin"/>
                     : enrolled ? <PlayCircle className="w-5 h-5"/> : <GraduationCap className="w-5 h-5"/>}
-                  {enrolling?"Enrollingâ€¦":enrolled?(course.progressPercent>0?"Continue Learning":"Start Course"):session?"Enroll Now":"Sign In to Enroll"}
+                  {(enrolling || checkoutLoading) ? (enrolled ? "Starting…" : "Processing…") : enrolled ? (course.progressPercent>0?"Continue Learning":"Start Course") : session ? (course.isFree ? "Enroll Free" : `Buy Now — $${course.price}`) : "Sign In to Enroll"}
                 </button>
                 <div className="mt-4 space-y-2 pt-4 border-t border-slate-100">
                   {[

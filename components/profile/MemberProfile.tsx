@@ -194,7 +194,10 @@ export default function MemberProfile() {
                   Manage Plan
                 </button>
               )}
-              <Link href="/upgrade" className="text-xs font-bold bg-[#0a1628] text-white px-4 py-2 rounded-full hover:bg-[#1a3a6b] transition-all shrink-0">Upgrade</Link>
+              {/* Only show Upgrade for free members */}
+              {tier === "FREE" && (
+                <Link href="/upgrade" className="text-xs font-bold bg-[#0a1628] text-white px-4 py-2 rounded-full hover:bg-[#1a3a6b] transition-all shrink-0">Upgrade</Link>
+              )}
             </div>
           </div>
         </div>

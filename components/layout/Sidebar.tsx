@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
 import Image from "next/image";
 import {
-  LayoutDashboard, CheckSquare, BarChart2, BookOpen, Gift, Bot, Calendar, Images,
+  LayoutDashboard, CheckSquare, BarChart2, BookOpen, Gift, Bot, Calendar, Images, Package,
 } from "lucide-react";
 
 type NavLink = { icon: React.ElementType; label: string; href: string; exact?: boolean };
@@ -33,7 +33,8 @@ const adminLinks: NavLink[] = [
   { icon: BookOpen,        label: "Courses",             href: "/admin/courses" },
   { icon: BarChart2,       label: "Analytics",           href: "/admin/analytics" },
   { icon: Calendar,        label: "Content Calendar",    href: "/admin/content-calendar" },
-  { icon: Images,          label: "Media Gallery",       href: "/admin/media-gallery" },
+  { icon: Images,          label: "Media Gallery",      href: "/admin/media-gallery" },
+  { icon: Package,         label: "Toolkit Downloads",   href: "/admin/toolkit-assets" },
   { icon: Gift,            label: "Affiliate",           href: "/admin/affiliate" },
   { icon: Bot,             label: "Atlas AI",            href: "/admin/atlas" },
 ];

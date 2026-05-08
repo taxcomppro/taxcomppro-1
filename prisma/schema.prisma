@@ -806,3 +806,15 @@ model ForumVote {
   @@unique([postId, userId])
   @@map("forum_votes")
 }
+
+model ToolkitAsset {
+  id         String   @id @default(cuid())
+  toolkitId  String   @unique   // matches id in lib/toolkits.ts
+  fileUrl    String             // Cloudinary secure URL
+  fileName   String             // original file name for display
+  fileSize   Int?               // bytes
+  uploadedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("toolkit_assets")
+}

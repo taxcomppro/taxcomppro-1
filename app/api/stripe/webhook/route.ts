@@ -28,25 +28,96 @@ export async function POST(req: NextRequest) {
 
     // ── Toolkit one-time purchase ──────────────────────────
     if (type === "toolkit" && userId && toolkitId) {
-      const mTier  = (membershipTier ?? "MARKETPLACE") as SubscriptionTier;
+      const mTier  = "VIP" as SubscriptionTier; // All toolkits grant VIP
       const months = Number(membershipMonths ?? 2);
+      const customerId = session.customer as string;
 
       await prisma.toolkitPurchase.create({
         data: { userId, toolkitId, stripeSessionId: session.id, membershipGranted: true, membershipTier: mTier, membershipMonths: months },
       });
 
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } });
-      const tierOrder: SubscriptionTier[] = ["FREE","VIP","MARKETPLACE","MARKETPLACE_PLUS"];
-      if (tierOrder.indexOf(mTier) > tierOrder.indexOf(user?.tier ?? "FREE")) {
-        await prisma.user.update({ where: { id: userId }, data: { tier: mTier } });
+      // Only grant membership if this toolkit includes it
+      if (months > 0) {
+        // Always upgrade to VIP (never downgrade from a higher tier)
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } });
+        const tierOrder: SubscriptionTier[] = ["FREE", "VIP", "MARKETPLACE", "MARKETPLACE_PLUS"];
+        if (tierOrder.indexOf(mTier) > tierOrder.indexOf(user?.tier ?? "FREE")) {
+          await prisma.user.update({ where: { id: userId }, data: { tier: mTier } });
+        }
+
+        // ── Set up auto-billing VIP subscription with 60-day trial ────────────
+        if (process.env.STRIPE_VIP_PRICE_ID && customerId) {
+          try {
+            let paymentMethodId: string | null = null;
+            if (session.payment_intent) {
+              const pi = await stripe.paymentIntents.retrieve(session.payment_intent as string);
+              paymentMethodId = pi.payment_method as string | null;
+            }
+            if (paymentMethodId) {
+              await stripe.customers.update(customerId, {
+                invoice_settings: { default_payment_method: paymentMethodId },
+              });
+            }
+            const existingSub = await prisma.subscription.findUnique({ where: { userId } });
+            if (!existingSub || existingSub.status === "canceled") {
+              const vipSub = await stripe.subscriptions.create({
+                customer: customerId,
+                items: [{ price: process.env.STRIPE_VIP_PRICE_ID }],
+                trial_period_days: 60,
+                metadata: { userId, source: "toolkit_purchase" },
+              });
+              await prisma.subscription.upsert({
+                where:  { userId },
+                create: { userId, plan: "VIP", stripeCustomerId: customerId, stripeSubscriptionId: vipSub.id, status: "trialing" },
+                update: { plan: "VIP", stripeSubscriptionId: vipSub.id, status: "trialing" },
+              });
+            }
+          } catch (e) {
+            console.error("Failed to create VIP trial subscription:", e);
+          }
+        }
       }
 
       await prisma.notification.create({
-        data: { userId, type: "SYSTEM", title: "🎉 Toolkit Purchase Complete!", message: `Your download is ready and you've received ${months} months of ${mTier} membership.` },
+        data: { userId, type: "SYSTEM", title: "🎉 Toolkit Purchase Complete!", message: `Your download is ready! You've received ${months} months of FREE VIP membership. After your trial, membership continues at $39.99/month — cancel anytime.` },
       });
     }
 
-    // ── Bundle one-time purchase ───────────────────────────
+
+    // ── Course one-time purchase ───────────────────────────
+    if (type === "course" && userId) {
+      const { courseId, slug } = session.metadata ?? {};
+      if (courseId) {
+        const alreadyEnrolled = await prisma.enrollment.findUnique({
+          where: { userId_courseId: { userId, courseId } },
+        });
+        if (!alreadyEnrolled) {
+          await prisma.enrollment.create({ data: { userId, courseId } });
+          const course = await prisma.course.findUnique({ where: { id: courseId }, select: { title: true, instructorId: true } });
+          if (course) {
+            await prisma.notification.create({
+              data: {
+                userId: course.instructorId,
+                type: "ENROLLMENT",
+                title: "New Paid Enrollment",
+                message: `Someone purchased your course: ${course.title}`,
+                link: `/courses/${slug ?? ""}`,
+              },
+            }).catch(() => {});
+            await prisma.notification.create({
+              data: {
+                userId,
+                type: "SYSTEM",
+                title: "🎉 Course Purchase Complete!",
+                message: `You are now enrolled in "${course.title}". Start learning now!`,
+                link: `/courses/${slug ?? ""}/learn`,
+              },
+            }).catch(() => {});
+          }
+        }
+      }
+    }
+
     if (type === "bundle" && userId) {
       const { bundleId } = session.metadata ?? {};
       const mTier  = (membershipTier ?? "MARKETPLACE_PLUS") as SubscriptionTier;

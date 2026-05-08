@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUser } from "@/store/slices/authSlice";
 import Link from "next/link";
-import { Download, CheckCircle2, Loader2, ExternalLink, Crown } from "lucide-react";
+import { Download, CheckCircle2, Loader2, ExternalLink, Crown, Info } from "lucide-react";
 
 interface Purchase {
   id: string; toolkitId: string; name: string; emoji: string;
@@ -30,8 +30,7 @@ function SuccessContent() {
   useEffect(() => {
     if (!sessionId) { setLoading(false); return; }
 
-    // Step 1 — call verify-session: this idempotently applies the tier upgrade
-    // and creates the purchase record if the webhook hasn't fired yet
+    // Call verify-session: idempotently applies the tier upgrade and creates the purchase record
     fetch("/api/stripe/verify-session", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
@@ -41,13 +40,8 @@ function SuccessContent() {
       .then((data: { tier?: string; user?: Record<string, unknown> }) => {
         if (data.tier && data.tier !== "FREE") {
           setGrantedTier(data.tier);
-          // Update Redux immediately so Navbar / feed show new tier
-          if (user) {
-            dispatch(setUser({ ...user, tier: data.tier as typeof user.tier }));
-          }
+          if (user) dispatch(setUser({ ...user, tier: data.tier as typeof user.tier }));
         }
-
-        // Step 2 — load purchases (now guaranteed to exist)
         return fetch("/api/user/purchases");
       })
       .then(r => r?.json())
@@ -61,27 +55,39 @@ function SuccessContent() {
   return (
     <div className="min-h-screen bg-[#f4f6fb] flex items-center justify-center px-4 py-20">
       <div className="max-w-lg w-full">
+
         {/* Success header */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-10 h-10 text-emerald-500" />
           </div>
           <h1 className="text-3xl font-black text-[#0a1628] mb-2">Purchase Complete!</h1>
-          <p className="text-slate-500">Your toolkit is ready and membership has been activated.</p>
+          <p className="text-slate-500">Your toolkit is ready and your VIP membership has been activated.</p>
         </div>
 
-        {/* Membership activated banner */}
+        {/* VIP membership activated banner */}
         {grantedTier && (
-          <div className="bg-gradient-to-r from-indigo-500 to-indigo-700 text-white rounded-2xl p-4 mb-4 flex items-center gap-3">
-            <Crown className="w-6 h-6 text-amber-300 shrink-0" />
+          <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-2xl p-4 mb-4 flex items-center gap-3">
+            <Crown className="w-6 h-6 text-white shrink-0" />
             <div>
-              <p className="font-black text-sm">Membership Activated!</p>
-              <p className="text-indigo-200 text-xs mt-0.5">
-                You now have <strong className="text-white">{TIER_LABELS[grantedTier] ?? grantedTier}</strong> access. Enjoy your benefits!
+              <p className="font-black text-sm">VIP Membership Activated!</p>
+              <p className="text-amber-100 text-xs mt-0.5">
+                You now have <strong className="text-white">{TIER_LABELS[grantedTier] ?? grantedTier}</strong> access for 2 months — enjoy your benefits!
               </p>
             </div>
           </div>
         )}
+
+        {/* Auto-billing disclosure */}
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+          <p className="text-blue-800 text-xs leading-relaxed">
+            <strong>Thank you for your purchase!</strong> As part of your toolkit, you are now receiving{" "}
+            <strong>2 months of FREE VIP Membership</strong> access. After your 2-month free period ends,
+            your membership will automatically continue at <strong>$39.99/month</strong>.
+            You may cancel at any time via your profile settings.
+          </p>
+        </div>
 
         {/* Downloads */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-4">
@@ -100,8 +106,8 @@ function SuccessContent() {
                   <span className="text-3xl">{p.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-[#0a1628] text-sm truncate">{p.name}</p>
-                    <p className="text-xs text-emerald-600 font-semibold">
-                      {p.membershipMonths} months {TIER_LABELS[p.membershipTier] ?? p.membershipTier} membership activated
+                    <p className="text-xs text-amber-600 font-semibold">
+                      {p.membershipMonths} months {TIER_LABELS[p.membershipTier] ?? p.membershipTier} VIP membership activated
                     </p>
                   </div>
                   {p.downloadUrl ? (

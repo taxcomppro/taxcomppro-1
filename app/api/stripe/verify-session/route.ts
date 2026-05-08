@@ -61,13 +61,13 @@ export async function POST(req: NextRequest) {
 
   // Toolkit / bundle one-time purchase — apply upgrade ourselves (idempotent fallback for webhook)
   if (type === "toolkit" || type === "bundle") {
-    const { toolkitId, membershipTier, membershipMonths, bundleId } = stripeSession.metadata ?? {};
-    const mTier  = (membershipTier ?? "MARKETPLACE") as SubscriptionTier;
+    const { toolkitId, membershipMonths, bundleId } = stripeSession.metadata ?? {};
+    const mTier  = "VIP" as SubscriptionTier; // All toolkits grant VIP
     const months = Number(membershipMonths ?? 2);
     const tkId   = type === "toolkit" ? toolkitId : `bundle:${bundleId ?? "unknown"}`;
+    const customerId = stripeSession.customer as string;
 
     if (tkId) {
-      // Only create the purchase record if the webhook hasn't already done it
       const existing = await prisma.toolkitPurchase.findFirst({
         where: { stripeSessionId: stripeSession.id },
       });
@@ -76,32 +76,103 @@ export async function POST(req: NextRequest) {
         await prisma.toolkitPurchase.create({
           data: {
             userId,
-            toolkitId:        tkId,
-            stripeSessionId:  stripeSession.id,
+            toolkitId:         tkId,
+            stripeSessionId:   stripeSession.id,
             membershipGranted: true,
-            membershipTier:   mTier,
-            membershipMonths: months,
+            membershipTier:    mTier,
+            membershipMonths:  months,
           },
         });
 
-        // Apply tier upgrade (never downgrade)
-        const currentUser = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } });
-        const tierOrder: SubscriptionTier[] = ["FREE", "VIP", "MARKETPLACE", "MARKETPLACE_PLUS"];
-        if (tierOrder.indexOf(mTier) > tierOrder.indexOf(currentUser?.tier ?? "FREE")) {
-          await prisma.user.update({ where: { id: userId }, data: { tier: mTier } });
-        }
+        // Only grant membership if this toolkit includes it (months > 0)
+        if (months > 0) {
+          // Apply tier upgrade (never downgrade)
+          const currentUser = await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } });
+          const tierOrder: SubscriptionTier[] = ["FREE", "VIP", "MARKETPLACE", "MARKETPLACE_PLUS"];
+          if (tierOrder.indexOf(mTier) > tierOrder.indexOf(currentUser?.tier ?? "FREE")) {
+            await prisma.user.update({ where: { id: userId }, data: { tier: mTier } });
+          }
 
-        await prisma.notification.create({
-          data: {
-            userId, type: "SYSTEM",
-            title:   "🎉 Toolkit Purchase Complete!",
-            message: `Your download is ready and you've received ${months} months of ${mTier} membership.`,
-          },
-        }).catch(() => {});
+          // ── Set up auto-billing VIP subscription with 60-day trial ──────────
+          if (process.env.STRIPE_VIP_PRICE_ID && customerId) {
+            try {
+              let paymentMethodId: string | null = null;
+              if (stripeSession.payment_intent) {
+                const pi = await stripe.paymentIntents.retrieve(stripeSession.payment_intent as string);
+                paymentMethodId = pi.payment_method as string | null;
+              }
+              if (paymentMethodId) {
+                await stripe.customers.update(customerId, {
+                  invoice_settings: { default_payment_method: paymentMethodId },
+                });
+              }
+              const existingSub = await prisma.subscription.findUnique({ where: { userId } });
+              if (!existingSub || existingSub.status === "canceled") {
+                const vipSub = await stripe.subscriptions.create({
+                  customer:          customerId,
+                  items:             [{ price: process.env.STRIPE_VIP_PRICE_ID }],
+                  trial_period_days: 60,
+                  metadata:          { userId, source: "toolkit_purchase" },
+                });
+                await prisma.subscription.upsert({
+                  where:  { userId },
+                  create: { userId, plan: "VIP", stripeCustomerId: customerId, stripeSubscriptionId: vipSub.id, status: "trialing" },
+                  update: { plan: "VIP", stripeSubscriptionId: vipSub.id, status: "trialing" },
+                });
+              }
+            } catch (e) {
+              console.error("verify-session: Failed to create VIP trial subscription:", e);
+            }
+          }
+
+          await prisma.notification.create({
+            data: {
+              userId, type: "SYSTEM",
+              title:   "🎉 Toolkit Purchase Complete!",
+              message: `Your download is ready! You've received ${months} months of FREE VIP membership. After your trial, membership continues at $39.99/month — cancel anytime.`,
+            },
+          }).catch(() => {});
+        } else {
+          // No membership — simple digital download notification
+          await prisma.notification.create({
+            data: {
+              userId, type: "SYSTEM",
+              title:   "🎉 Purchase Complete!",
+              message: "Your digital download is ready.",
+            },
+          }).catch(() => {});
+        }
       }
     }
 
     resolvedTier = (await prisma.user.findUnique({ where: { id: userId }, select: { tier: true } }))?.tier ?? "FREE";
+  }
+
+  // Course one-time purchase — idempotent fallback for webhook
+  let enrolledCourseSlug: string | null = null;
+  if (type === "course" && userId) {
+    const { courseId, slug } = stripeSession.metadata ?? {};
+    if (courseId) {
+      const alreadyEnrolled = await prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId, courseId } },
+      });
+      if (!alreadyEnrolled) {
+        await prisma.enrollment.create({ data: { userId, courseId } });
+        const course = await prisma.course.findUnique({ where: { id: courseId }, select: { title: true, instructorId: true } });
+        if (course) {
+          await prisma.notification.create({
+            data: {
+              userId,
+              type: "SYSTEM",
+              title: "🎉 Course Purchase Complete!",
+              message: `You are now enrolled in "${course.title}". Start learning now!`,
+              link: `/courses/${slug ?? ""}/learn`,
+            },
+          }).catch(() => {});
+        }
+      }
+      enrolledCourseSlug = slug ?? null;
+    }
   }
 
   // Return the fresh tier so the client can update Redux
@@ -110,5 +181,5 @@ export async function POST(req: NextRequest) {
     select: { tier: true, role: true, name: true, email: true, image: true, bio: true, headline: true },
   });
 
-  return NextResponse.json({ tier: freshUser?.tier ?? "FREE", user: freshUser });
+  return NextResponse.json({ tier: freshUser?.tier ?? "FREE", user: freshUser, enrolledCourseSlug });
 }

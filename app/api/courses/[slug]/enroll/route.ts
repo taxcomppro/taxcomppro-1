@@ -14,6 +14,10 @@ export async function POST(
   const course = await prisma.course.findUnique({ where: { slug, status: "PUBLISHED" } });
   if (!course) return NextResponse.json({ error: "Course not found" }, { status: 404 });
 
+  // Paid courses must go through Stripe checkout — reject direct enrollment
+  if (!course.isFree && course.price > 0)
+    return NextResponse.json({ error: "Payment required", requiresPayment: true }, { status: 402 });
+
   const existing = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId: session.user.id, courseId: course.id } },
   });

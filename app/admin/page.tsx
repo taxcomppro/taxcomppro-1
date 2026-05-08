@@ -241,6 +241,22 @@ export default function AdminPage() {
               </Link>
             </div>
 
+            {/* Toolkit Downloads */}
+            <div className="bg-white rounded-2xl p-5 border border-amber-100">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-amber-500 text-xl">📦</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Admin Tool</span>
+              </div>
+              <h3 className="font-black text-base text-[#0a1628] mb-1">Toolkit Downloads</h3>
+              <p className="text-slate-500 text-xs leading-relaxed mb-4">
+                Upload digital files to <strong className="text-[#0a1628]">Cloudinary</strong> for each toolkit. Users get the link instantly after purchase.
+              </p>
+              <Link href="/admin/toolkit-assets"
+                className="flex items-center justify-center gap-2 bg-amber-500 text-white font-black text-sm px-4 py-2.5 rounded-xl hover:bg-amber-600 transition-all">
+                <Add01Icon className="w-4 h-4" /> Manage Files
+              </Link>
+            </div>
+
             {/* Create featured listing CTA */}
             <div className="bg-[#0a1628] rounded-2xl p-5 text-white">
               <div className="flex items-center gap-2 mb-1">

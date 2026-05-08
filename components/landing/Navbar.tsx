@@ -63,6 +63,8 @@ export default function Navbar() {
   const storeUser = useAppSelector(s => s.auth.user);
   const user = session?.user;
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Seed Redux auth state so feed components work in (landing) pages
   useEffect(() => {
@@ -251,11 +253,12 @@ export default function Navbar() {
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="p-2 text-slate-500 hover:text-[#0a1628] hover:bg-slate-50 rounded-full transition-all"
-                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                title={mounted ? (theme === "dark" ? "Switch to light mode" : "Switch to dark mode") : "Toggle theme"}
               >
-                {theme === "dark"
+                {mounted && (theme === "dark"
                   ? <Sun className="w-5 h-5" />
-                  : <Moon className="w-5 h-5" />}
+                  : <Moon className="w-5 h-5" />)
+                }
               </button>
 
               {/* Search icon */}

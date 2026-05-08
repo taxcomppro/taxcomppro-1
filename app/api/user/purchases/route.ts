@@ -13,10 +13,16 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  // Attach toolkit metadata + download URL (resolved server-side from env)
+  // Fetch all toolkit assets once (from DB, not env vars)
+  const assets    = await prisma.toolkitAsset.findMany();
+  const assetMap  = Object.fromEntries(assets.map(a => [a.toolkitId, a.fileUrl]));
+
   const enriched = purchases.map(p => {
     const toolkit = getToolkit(p.toolkitId);
-    const downloadUrl = process.env[toolkit?.downloadEnvKey ?? ""] ?? null;
+    // Use our proxy endpoint — never expose raw Cloudinary URL to client
+    const downloadUrl = assetMap[p.toolkitId]
+      ? `/api/download/toolkit/${p.toolkitId}`
+      : null;
     return {
       id:               p.id,
       toolkitId:        p.toolkitId,

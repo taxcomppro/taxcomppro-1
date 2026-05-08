@@ -35,13 +35,20 @@ export async function POST(req: NextRequest) {
     customer: customerId,
     mode: "payment",
     payment_method_types: ["card"],
+    // Save card for future VIP trial billing only if this toolkit includes membership
+    ...(toolkit.membershipMonths > 0 ? {
+      payment_intent_data: {
+        setup_future_usage: "off_session" as const,
+        metadata: { userId: user.id, source: "toolkit_purchase" },
+      },
+    } : {}),
     line_items: [{
       price_data: {
         currency: "usd",
         unit_amount: Math.round(toolkit.price * 100),
         product_data: {
           name: toolkit.name,
-          description: `${toolkit.membershipMonths} months ${toolkit.membershipTier} membership + digital download`,
+          description: `Includes ${toolkit.membershipMonths} months FREE VIP membership, then $39.99/month`,
           images: [],
         },
       },
@@ -52,7 +59,7 @@ export async function POST(req: NextRequest) {
     metadata: {
       userId:           user.id,
       toolkitId,
-      membershipTier:   toolkit.membershipTier,
+      membershipTier:   toolkit.membershipMonths > 0 ? "VIP" : "",
       membershipMonths: String(toolkit.membershipMonths),
       type:             "toolkit",
     },

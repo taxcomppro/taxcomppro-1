@@ -40,7 +40,7 @@ export const TOOLKITS: Toolkit[] = [
     emoji: "🛡️",
     color: "from-[#0a1628] to-[#1a3a6b]",
     popular: true,
-    membershipTier: "MARKETPLACE",
+    membershipTier: "VIP",
     membershipMonths: 2,
     downloadEnvKey: "TOOLKIT_DOWNLOAD_IRS_FINE_DEFENSE",
     badgeImage: "/toolkits-badge/irs-fine-defense.jpg",
@@ -65,7 +65,7 @@ export const TOOLKITS: Toolkit[] = [
     price: 299.99,
     emoji: "🚀",
     color: "from-indigo-600 to-indigo-900",
-    membershipTier: "MARKETPLACE",
+    membershipTier: "VIP",
     membershipMonths: 2,
     downloadEnvKey: "TOOLKIT_DOWNLOAD_30_DAY_TAX_OFFICE",
     badgeImage: "/toolkits-badge/30 DAY TAX OFFICE LAUNCH.png",
@@ -90,7 +90,7 @@ export const TOOLKITS: Toolkit[] = [
     price: 299.99,
     emoji: "📋",
     color: "from-emerald-600 to-emerald-900",
-    membershipTier: "MARKETPLACE",
+    membershipTier: "VIP",
     membershipMonths: 2,
     downloadEnvKey: "TOOLKIT_DOWNLOAD_AUDIT_PLAYBOOK",
     badgeImage: "/toolkits-badge/audit-playbok.png",
@@ -114,7 +114,7 @@ export const TOOLKITS: Toolkit[] = [
     price: 299.99,
     emoji: "📊",
     color: "from-purple-600 to-purple-900",
-    membershipTier: "MARKETPLACE",
+    membershipTier: "VIP",
     membershipMonths: 2,
     downloadEnvKey: "TOOLKIT_DOWNLOAD_SCHEDULE_C",
     badgeImage: "/toolkits-badge/SCHEDULE C RECONSTRUCTION.png",
@@ -139,7 +139,7 @@ export const TOOLKITS: Toolkit[] = [
     emoji: "🖼️",
     color: "from-amber-600 to-amber-800",
     membershipTier: "VIP",
-    membershipMonths: 2,
+    membershipMonths: 0,
     downloadEnvKey: "TOOLKIT_DOWNLOAD_PENALTY_POSTERS",
     badgeImage: "/toolkits-badge/irs-penalty-defense-posters-.png",
     features: [
@@ -214,6 +214,10 @@ export const BUNDLES: Bundle[] = [
 
 export function getToolkit(id: string): Toolkit | undefined {
   return TOOLKITS.find(t => t.id === id);
+}
+
+export function getAllToolkits(): Toolkit[] {
+  return TOOLKITS;
 }
 
 export function getBundle(id: string): Bundle | undefined {

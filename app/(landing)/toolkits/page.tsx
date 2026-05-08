@@ -41,10 +41,12 @@ function ToolkitCard({ tk }: { tk: Toolkit }) {
         <h3 className="font-black text-base text-[#0a1628] uppercase tracking-wide text-center leading-tight mb-2 transition-colors duration-200 group-hover:text-[#1a3a6b]">
           {tk.name}
         </h3>
-        <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-full">
-          <ShieldCheck className="w-3 h-3" />
-          {tierLabel(tk.membershipTier, tk.membershipMonths)}
-        </div>
+        {tk.membershipMonths > 0 && (
+          <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-full">
+            <ShieldCheck className="w-3 h-3" />
+            {tierLabel(tk.membershipTier, tk.membershipMonths)}
+          </div>
+        )}
       </div>
 
       {/* Features */}
@@ -62,9 +64,11 @@ function ToolkitCard({ tk }: { tk: Toolkit }) {
       <div className="px-5 pb-5 pt-4 bg-white border-t border-slate-100">
         <div className="text-center mb-3">
           <span className="text-4xl font-black text-[#0a1628]">${tk.price}</span>
-          <p className="text-[10px] text-emerald-600 font-bold mt-0.5">
-            + {tierLabel(tk.membershipTier, tk.membershipMonths)}
-          </p>
+          {tk.membershipMonths > 0 && (
+            <p className="text-[10px] text-emerald-600 font-bold mt-0.5">
+              + {tierLabel(tk.membershipTier, tk.membershipMonths)}
+            </p>
+          )}
         </div>
         {user ? (
           <>
